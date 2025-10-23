@@ -1,6 +1,6 @@
 # RPL-Lectant-BE
 
-<img width="1152" height="896" alt="RPL-Lectant Logo" src="https://github.com/user-attachments/assets/bcf65200-876f-4912-bfb0-96feb407110a" />
+<img width="320" alt="RPL-Lectant Logo" src="https://github.com/user-attachments/assets/bcf65200-876f-4912-bfb0-96feb407110a" />
 
 This is RPL Lectant BE Repository.
 
