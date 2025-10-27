@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"  // <- pindahkan ke root/src
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model berkas {
+  id_berkas      Int         @id @default(autoincrement())
+  id_pendaftaran Int
+  nama_file      String?     @db.VarChar(255)
+  path_file      String?     @db.VarChar(255)
+  tanggal_upload DateTime?   @default(now()) @db.Timestamp(6)
+  pendaftaran    pendaftaran @relation(fields: [id_pendaftaran], references: [id_pendaftaran], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_pendaftaran], map: "idx_berkas_id_pendaftaran")
+}
+
+model dosen {
+  id_dosen   BigInt     @id @default(autoincrement())
+  nip        String?    @db.Char(18)
+  nama       String?    @db.VarChar(100)
+  email      String?    @db.VarChar(100)
+  no_telepon String?    @db.VarChar(15)
+  jurusan    String?    @db.VarChar(50)
+  users      users      @relation(fields: [id_dosen], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+  lowongan   lowongan[]
+}
+
+model kelas {
+  id_kelas     Int         @id @default(autoincrement())
+  id_mk        Int
+  nama_kelas   String?     @db.VarChar(10)
+  jadwal_kelas String?     @db.VarChar(100)
+  mata_kuliah  mata_kuliah @relation(fields: [id_mk], references: [id_mk])
+  lowongan     lowongan[]
+
+  @@index([id_mk], map: "idx_kelas_id_mk")
+}
+
+model lowongan {
+  id_lowongan               Int           @id @default(autoincrement())
+  id_kelas                  Int
+  id_dosen                  BigInt        // BigInt supaya cocok dosen.id_dosen
+  tahun_ajaran              String?       @db.VarChar(20)
+  jumlah_asisten            Int?
+  persyaratan               String?
+  honor                     Decimal?      @db.Decimal(10, 2)
+  tanggal_mulai_pendaftaran DateTime?     @db.Timestamp(6)
+  tanggal_akhir_pendaftaran DateTime?     @db.Timestamp(6)
+  tanggal_mulai_kontrak     DateTime?     @db.Timestamp(6)
+  tanggal_akhir_kontrak     DateTime?     @db.Timestamp(6)
+  dosen                     dosen         @relation(fields: [id_dosen], references: [id_dosen])
+  kelas                     kelas         @relation(fields: [id_kelas], references: [id_kelas])
+  notifikasi                notifikasi[]
+  pendaftaran               pendaftaran[]
+
+  @@index([id_dosen], map: "idx_lowongan_id_dosen")
+  @@index([id_kelas], map: "idx_lowongan_id_kelas")
+}
+
+
+model mahasiswa {
+  id_mahasiswa BigInt     @id @default(autoincrement()) // BigInt supaya cocok users.id_user
+  nrp          String?    @db.Char(10)
+  nama         String?    @db.VarChar(100)
+  email        String?    @db.VarChar(100)
+  no_telepon   String?    @db.VarChar(15)
+  jurusan      String?    @db.VarChar(50)
+  angkatan     String?    @db.VarChar(5)
+  semester     Int?
+  users        users      @relation(fields: [id_mahasiswa], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+  notifikasi   notifikasi[]
+  pendaftaran  pendaftaran[]
+}
+
+model mata_kuliah {
+  id_mk      Int     @id @default(autoincrement())
+  kode_mk    String? @db.VarChar(8)
+  nama_mk    String? @db.VarChar(100)
+  jumlah_sks Int?
+  kelas      kelas[]
+}
+
+model notifikasi {
+  id_notifikasi    Int                    @id @default(autoincrement())
+  id_lowongan      Int?
+  id_mahasiswa     BigInt?                // BigInt supaya cocok mahasiswa.id_mahasiswa
+  jenis_notifikasi jenis_notifikasi_enum?
+  isi_pesan        String?
+  tanggal_kirim    DateTime?              @default(now()) @db.Timestamp(6)
+  lowongan         lowongan?              @relation(fields: [id_lowongan], references: [id_lowongan], onUpdate: NoAction)
+  mahasiswa        mahasiswa?             @relation(fields: [id_mahasiswa], references: [id_mahasiswa], onUpdate: NoAction)
+
+  @@index([id_lowongan], map: "idx_notifikasi_id_lowongan")
+  @@index([id_mahasiswa], map: "idx_notifikasi_id_mahasiswa")
+}
+
+
+model pendaftaran {
+  id_pendaftaran     Int                      @id @default(autoincrement())
+  id_lowongan        Int
+  id_mahasiswa       BigInt                   // BigInt supaya cocok mahasiswa.id_mahasiswa
+  status_pendaftaran status_pendaftaran_enum? @default(pending)
+  tanggal_daftar     DateTime?                @default(now()) @db.Timestamp(6)
+  berkas             berkas[]
+  lowongan           lowongan                 @relation(fields: [id_lowongan], references: [id_lowongan])
+  mahasiswa          mahasiswa                @relation(fields: [id_mahasiswa], references: [id_mahasiswa])
+
+  @@index([id_lowongan], map: "idx_pendaftaran_id_lowongan")
+  @@index([id_mahasiswa], map: "idx_pendaftaran_id_mahasiswa")
+}
+
+
+model users {
+  id_user       BigInt         @id @default(autoincrement())
+  email         String         @unique @db.VarChar(100)
+  password_hash String
+  role          user_role_enum @default(mahasiswa)
+  created_at    DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?      @default(now()) @db.Timestamp(6)
+  dosen         dosen?
+  mahasiswa     mahasiswa?
+}
+
+
+enum jenis_notifikasi_enum {
+  email
+  whatsapp
+  floater
+}
+
+enum status_pendaftaran_enum {
+  pending
+  accepted
+  rejected
+}
+
+enum user_role_enum {
+  mahasiswa
+  dosen
+}
