@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"  // <- pindahkan ke root/src
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model berkas {
+  id_berkas      Int                  @id @default(autoincrement())
+  id_pendaftaran Int
+  nama_file      String?              @db.VarChar(255)
+  path_file      String?              @db.VarChar(255)
+  tipe_berkas    tipe_berkas_enum?
+  tanggal_upload DateTime?            @default(now()) @db.Timestamp(6)
+  pendaftaran    pendaftaran         @relation(fields: [id_pendaftaran], references: [id_pendaftaran], onDelete: Cascade)
+
+  @@index([id_pendaftaran])
+}
+
+model dosen {
+  id_user     BigInt                 @id
+  nip         String?                @db.VarChar(18)
+  nama        String?                @db.VarChar(100)
+  email       String?                @db.VarChar(100)
+  no_telepon  String?                @db.VarChar(15)
+  jurusan     String?                @db.VarChar(50)
+  user        users                  @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  lowongan    lowongan[]
+}
+
+model mahasiswa {
+  id_user      BigInt                @id
+  nrp          String?               @db.Char(10)
+  nama         String?               @db.VarChar(100)
+  email        String?               @db.VarChar(100)
+  no_telepon   String?               @db.VarChar(15)
+  jurusan      String?               @db.VarChar(50)
+  angkatan     String?               @db.VarChar(5)
+  semester     Int?
+  user         users                 @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  notifikasi   notifikasi[]
+  pendaftaran  pendaftaran[]
+}
+
+model kelas {
+  id_kelas    Int          @id @default(autoincrement())
+  id_mk       Int
+  nama_kelas  String?      @db.VarChar(10)
+  hari        String?      @db.VarChar(10)
+  jam_mulai   DateTime?
+  jam_selesai DateTime?
+  mata_kuliah mata_kuliah @relation(fields: [id_mk], references: [id_mk])
+  lowongan    lowongan[]
+
+  @@index([id_mk])
+}
+
+model lowongan {
+  id_lowongan               Int           @id @default(autoincrement())
+  id_kelas                  Int
+  id_dosen                  BigInt
+  tahun_ajaran              String?       @db.VarChar(20)
+  jumlah_asisten            Int?
+  persyaratan               String?
+  honor                     Decimal?      @db.Decimal(10, 2)
+  tanggal_mulai_pendaftaran DateTime?
+  tanggal_akhir_pendaftaran DateTime?
+  tanggal_mulai_kontrak     DateTime?
+  tanggal_akhir_kontrak     DateTime?
+  dosen                     dosen         @relation(fields: [id_dosen], references: [id_user])
+  kelas                     kelas         @relation(fields: [id_kelas], references: [id_kelas])
+  notifikasi                notifikasi[]
+  pendaftaran               pendaftaran[]
+
+  @@index([id_dosen])
+  @@index([id_kelas])
+}
+
+model mata_kuliah {
+  id_mk      Int       @id @default(autoincrement())
+  kode_mk    String?   @db.VarChar(8)
+  nama_mk    String?   @db.VarChar(100)
+  jumlah_sks Int?
+  kelas      kelas[]
+}
+
+model notifikasi {
+  id_notifikasi Int                     @id @default(autoincrement())
+  id_lowongan   Int?
+  id_mahasiswa  BigInt?
+  channel       notifikasi_channel_enum @default(website)
+  isi_pesan     String?
+  tanggal_kirim DateTime?               @default(now())
+  lowongan      lowongan?               @relation(fields: [id_lowongan], references: [id_lowongan])
+  mahasiswa     mahasiswa?              @relation(fields: [id_mahasiswa], references: [id_user])
+
+  @@index([id_lowongan])
+  @@index([id_mahasiswa])
+}
+
+model pendaftaran {
+  id_pendaftaran     Int                      @id @default(autoincrement())
+  id_lowongan        Int
+  id_mahasiswa       BigInt
+  status_pendaftaran status_pendaftaran_enum? @default(pending)
+  tanggal_daftar     DateTime?                @default(now())
+  berkas             berkas[]
+  lowongan           lowongan                 @relation(fields: [id_lowongan], references: [id_lowongan])
+  mahasiswa          mahasiswa                @relation(fields: [id_mahasiswa], references: [id_user])
+
+  @@index([id_lowongan])
+  @@index([id_mahasiswa])
+}
+
+model users {
+  id_user       BigInt          @id @default(autoincrement())
+  email         String          @unique
+  password_hash String
+  role          user_role_enum  @default(mahasiswa)
+  created_at    DateTime?       @default(now())
+  updated_at    DateTime?       @default(now())
+  dosen         dosen?
+  mahasiswa     mahasiswa?
+}
+
+enum tipe_berkas_enum {
+  ktp
+  transkrip
+  surat_permohonan
+}
+
+enum notifikasi_channel_enum {
+  website
+  email
+  whatsapp
+  floater
+}
+
+enum status_pendaftaran_enum {
+  pending
+  accepted
+  rejected
+}
+
+enum user_role_enum {
+  mahasiswa
+  dosen
+}

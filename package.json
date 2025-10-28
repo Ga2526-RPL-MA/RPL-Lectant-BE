@@ -13,7 +13,14 @@
     "type": "git",
     "url": "git+https://github.com/Ga2526-RPL-MA/RPL-Lectant-BE.git"
   },
-  "keywords": ["express", "backend", "supabase", "jwt", "rpl", "lectant"],
+  "keywords": [
+    "express",
+    "backend",
+    "supabase",
+    "jwt",
+    "rpl",
+    "lectant"
+  ],
   "author": "RPL-Lectant Team",
   "license": "ISC",
   "bugs": {
@@ -21,11 +28,14 @@
   },
   "homepage": "https://github.com/Ga2526-RPL-MA/RPL-Lectant-BE#readme",
   "dependencies": {
+    "@prisma/client": "^6.18.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.18.0"
   }
 }
