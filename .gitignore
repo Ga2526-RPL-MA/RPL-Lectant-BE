@@ -1,2 +1,12 @@
 .env
+<<<<<<< HEAD
 node_modules
+=======
+
+node_modules
+
+# Ignore generated Prisma client
+src/generated/prisma/
+prisma/client/
+
+>>>>>>> ae5608f2e0692301081aec77036a35b76188a827
