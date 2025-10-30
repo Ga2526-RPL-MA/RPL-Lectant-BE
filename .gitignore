@@ -1,7 +1,4 @@
 .env
-<<<<<<< HEAD
-node_modules
-=======
 
 node_modules
 
@@ -9,4 +6,3 @@ node_modules
 src/generated/prisma/
 prisma/client/
 
->>>>>>> ae5608f2e0692301081aec77036a35b76188a827
