@@ -2,9 +2,12 @@ import bcrypt from "bcryptjs";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyAccessToken,
   verifyRefreshToken,
-} from "../../utils/jwt.js";
-import { findUserByEmail, createUser } from "../repository/user_repository.js";
+} from "../utils/jwt.js";
+import { findUserByEmail, createUser, updatePassword } from "../repository/user_repository.js";
+import { findByEmail } from "../repository/user_repository.js";
+import { sendResetEmail } from "../utils/sendEmail.js";
 
 export const register = async (req, res) => {
   try {
@@ -95,3 +98,47 @@ export const logout = (req, res) => {
   });
   res.json({ message: "Logout berhasil." });
 };
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email.endsWith("@gmail.com")) {
+    return res.status(400).json({ message: "Gunakan email @gmail.com" });
+  }
+
+  const user = findByEmail(email);
+  if (!user) return res.status(404).json({ message: "Email tidak ditemukan" });
+
+  const token = generateAccessToken({ email });
+  const resetLink = `http://localhost:4000/auth/reset-password?token=${token}`;
+
+  try {
+    await sendResetEmail(email, resetLink);
+    res.json({ message: "Email reset password telah dikirim" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Gagal mengirim email" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ message: "Token dan password wajib diisi" });
+  }
+
+  try {
+    const decoded =  verifyAccessToken(token);;
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await updatePassword(decoded.email, hashed);
+
+    if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
+
+    res.json({ message: "Password berhasil direset" });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Token tidak valid atau kadaluarsa" });
+  }
+};
+
