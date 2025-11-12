@@ -1,18 +1,25 @@
 import express from "express";
-import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import router from "./routes/index.js";
+import authRouter from "./api/router/user_router.js";
 
 dotenv.config();
-
 const app = express();
-
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
-app.use("/api", router);
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+// custom JSON handling for BigInt
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (data) {
+    const replacer = (key, value) => (typeof value === "bigint" ? value.toString() : value);
+    return originalJson.call(this, JSON.parse(JSON.stringify(data, replacer)));
+  };
+  next();
 });
+
+// routes
+app.use("/auth", authRouter);
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
