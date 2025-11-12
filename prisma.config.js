@@ -1,8 +1,8 @@
+import dotenv from "dotenv"; 
 import { defineConfig, env } from "prisma/config";
-import { config } from "dotenv";
 
 // load .env file dulu
-config();
+dotenv.config();
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
