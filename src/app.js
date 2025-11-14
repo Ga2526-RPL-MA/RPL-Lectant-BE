@@ -22,5 +22,8 @@ app.use((req, res, next) => {
 // routes
 app.use("/auth", authRouter);
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.get("/", (req, res) => {
+  res.send("Welcome to RPL-Lectant Backend Express App!");
+});
+
+export default app;
