@@ -12,16 +12,8 @@ export const findByEmail = (email) => {
   return users.find((u) => u.email === email);
 };
 
-// Fungsi register user (dummy)
-export const createUser = async ({ email, password_hash }) => {
-  const newUser = {
-    id_user: users.length + 1,
-    email,
-    password_hash,
-  };
-  users.push(newUser);
-  return newUser;
-};
+export const createUser = async (data) => {
+  return prisma.users.create({ data });
 
 export const updatePassword = async (email, newHashedPassword) => {
   const userIndex = users.findIndex((u) => u.email === email);
