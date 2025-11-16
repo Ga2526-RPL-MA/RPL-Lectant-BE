@@ -14,6 +14,7 @@ export const findByEmail = (email) => {
 
 export const createUser = async (data) => {
   return prisma.users.create({ data });
+}
 
 export const updatePassword = async (email, newHashedPassword) => {
   const userIndex = users.findIndex((u) => u.email === email);
