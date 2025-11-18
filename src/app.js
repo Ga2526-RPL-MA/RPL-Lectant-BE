@@ -4,10 +4,23 @@ dotenv.config();
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRouter from "./api/router/user_router.js";
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+//CORS 
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",                   // local Next.js
+      "https://rpl-lectant-fe.vercel.app"         // deployed FE domain
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
 // custom JSON handling for BigInt
 app.use((req, res, next) => {
