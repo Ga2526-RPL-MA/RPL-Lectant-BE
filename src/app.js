@@ -39,4 +39,4 @@ app.get("/", (req, res) => {
   res.send("Welcome to RPL-Lectant Backend Express App!");
 });
 
-export default app;
+app.listen(4000, console.log("app listen on port 4000"));

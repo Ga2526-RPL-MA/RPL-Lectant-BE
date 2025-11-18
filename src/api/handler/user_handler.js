@@ -6,7 +6,6 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt.js";
 import { findUserByEmail, createUser, updatePassword } from "../repository/user_repository.js";
-import { findByEmail } from "../repository/user_repository.js";
 import { sendResetEmail } from "../utils/sendEmail.js";
 
 export const register = async (req, res) => {
@@ -49,7 +48,7 @@ export const login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ message: "Kata sandi salah." });
 
-    const payload = { id_user: user.id_user.toString(), role: user.role };
+    const payload = { id_user: user.id_user.toString(), role: user.role, email: user.email};
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
@@ -100,26 +99,32 @@ export const logout = (req, res) => {
 };
 
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const { email_recovery } = req.body;
 
-  if (!email.endsWith("@gmail.com")) {
+  if (!email_recovery.endsWith("@gmail.com")) {
     return res.status(400).json({ message: "Gunakan email @gmail.com" });
   }
 
-  const user = findByEmail(email);
-  if (!user) return res.status(404).json({ message: "Email tidak ditemukan" });
+  // email ITS berasal dari token login
+  const email_its = req.user.email;
+  if (!email_its) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-  const token = generateAccessToken({ email });
-  const resetLink = `http://localhost:4000/auth/reset-password?token=${token}`;
+  // Buat token reset berdasarkan email ITS
+  const token = generateAccessToken({ email: email_its });
+
+  const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
   try {
-    await sendResetEmail(email, resetLink);
-    res.json({ message: "Email reset password telah dikirim" });
+    await sendResetEmail(email_recovery, resetLink);
+    res.json({ message: "Link reset password telah dikirim ke email recovery Anda." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Gagal mengirim email" });
+    res.status(500).json({ message: "Gagal mengirim email reset" });
   }
 };
+
 
 export const resetPassword = async (req, res) => {
   const { token, password } = req.body;
