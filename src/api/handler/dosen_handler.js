@@ -6,7 +6,6 @@ class DosenHandler {
     this.dosenService = new DosenService();
   }
 
-
   // CREATE
   createProfileHandler = async (req, res) => {
     try {
