@@ -1,4 +1,4 @@
-import DosenService from "../service/dosen_services.js";
+import DosenService from "../service/dosen_service.js";
 
 class DosenHandler {
   constructor() {

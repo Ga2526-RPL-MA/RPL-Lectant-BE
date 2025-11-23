@@ -1,5 +1,5 @@
 // src/api/handler/lowongan.handler.js
-import LowonganService from '../service/lowongan_services.js';
+import LowonganService from '../service/lowongan_service.js';
 
 class LowonganHandler {
   constructor() {

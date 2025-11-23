@@ -1,6 +1,6 @@
 // src/api/router/auth.router.js
 import { Router } from 'express';
-import AuthHandler from '../handler/auth_handler.js';
+import AuthHandler from '../handler/user_handler.js';
 import { authMiddleware } from '../../middleware/authentication.js';
 
 const router = Router();

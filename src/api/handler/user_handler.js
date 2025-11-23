@@ -1,5 +1,5 @@
 // src/api/handler/auth.handler.js
-import AuthService from '../service/auth_services.js';
+import AuthService from '../service/user_service.js';
 
 class AuthHandler {
   constructor() {
