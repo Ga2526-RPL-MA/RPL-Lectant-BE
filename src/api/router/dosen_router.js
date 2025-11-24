@@ -9,8 +9,8 @@ const router = express.Router();
 router.use(auth, authorizeRole(["dosen"]));
 
 // Routes
-router.post("/profile", createProfileHandler); // buat profil baru
-router.get("/profile", getProfileHandler);     // lihat profil
-router.patch("/profile", updateProfileHandler); // update profil
+router.post("/profile-aing", createProfileHandler); // buat profil baru
+router.get("/profile-aing", getProfileHandler);     // lihat profil
+router.patch("/profile-aing", updateProfileHandler); // update profil
 
 export default router;
