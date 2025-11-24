@@ -4,6 +4,7 @@ dotenv.config();
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRouter from "./api/router/user_router.js";
+import dosenRouter from "./api/router/dosen_router.js";
 import cors from "cors";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use((req, res, next) => {
 
 // routes
 app.use("/auth", authRouter);
+app.use("/dosen", dosenRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome to RPL-Lectant Backend Express App!");
