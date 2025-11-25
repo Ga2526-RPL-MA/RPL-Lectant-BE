@@ -6,7 +6,7 @@ import { authMiddleware, isDosenMiddleware } from '../../middleware/authenticati
 const router = Router();
 const lowonganHandler = new LowonganHandler();
 
-// PUT /lowongan/:lowonganId/status
 router.put('/:lowonganId/status', authMiddleware, isDosenMiddleware, lowonganHandler.updateStatusLowongan);
+router.get('/:lowonganId/pendaftar', authMiddleware, isDosenMiddleware, lowonganHandler.getPendaftarByLowonganId);
 
 export default router;

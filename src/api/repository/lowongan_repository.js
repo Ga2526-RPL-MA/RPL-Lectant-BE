@@ -1,4 +1,3 @@
-// src/api/repository/lowongan.repository.js
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -6,8 +5,6 @@ const prisma = new PrismaClient();
 class LowonganRepository {
   async findLowonganById(idLowongan) {
     try {      
-      // Query lowongan dengan relasi kelas, mata_kuliah, dan dosen
-      // Primary key adalah id_lowongan (bukan id)
       const lowongan = await prisma.lowongan.findUnique({
         where: {
           id_lowongan: parseInt(idLowongan)
@@ -42,15 +39,55 @@ class LowonganRepository {
     }
   }
 
+  async getPendaftarByLowonganId(lowonganId) {
+    try {
+      const pendaftar = await prisma.pendaftaran.findMany({
+        where: {
+          id_lowongan: parseInt(lowonganId)
+        },
+        include: {
+          mahasiswa: {
+            select: {
+              id_user: true,
+              nama: true,
+              nrp: true,
+              jurusan: true
+            }
+          }
+        },
+        orderBy: {
+          tanggal_daftar: 'desc'
+        }
+      });
+
+      // Transform data 
+      return pendaftar.map(p => ({
+        id: p.mahasiswa.id_user,
+        nama: p.mahasiswa.nama,
+        nrp: p.mahasiswa.nrp,
+        ipk: p.ipk || 2.3, 
+        semester: p.semester || 14, 
+        no_telp: p.no_telepon|| '08181818181', 
+        tanggal_daftar: new Date(p.tanggal_daftar).toLocaleString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }),
+        status: p.status_pendaftaran 
+      }));
+    } catch (error) {
+      console.error('Error in LowonganRepository.getPendaftarByLowonganId:', error);
+      throw error;
+    }
+  }
+
   async updateStatusLowongan(idLowongan, status) {
     try {
       console.log('=== REPOSITORY updateStatusLowongan ===');
       console.log('Input idLowongan:', idLowongan);
       console.log('Input status:', status);
 
-      // Gunakan transaction untuk update lowongan dan pendaftar
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Update status lowongan
         const lowongan = await tx.lowongan.update({
           where: {
             id_lowongan: parseInt(idLowongan)
@@ -73,7 +110,6 @@ class LowonganRepository {
 
         console.log('Lowongan updated');
 
-        // 2. Jika status = "tutup", reject semua pendaftar yang masih pending
         if (status === 'tutup') {
           const updateResult = await tx.pendaftaran.updateMany({
             where: {

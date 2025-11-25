@@ -6,6 +6,7 @@ import { authorizeRole } from "../../middleware/rbacMiddleware.js";
 const router = Router();
 const dosenHandler = new DosenHandler();
 
+<<<<<<< HEAD
 
 // Semua route butuh auth + role dosen
 router.use(auth, authorizeRole(["dosen"]));
@@ -18,5 +19,10 @@ router.patch("/profile-aing", dosenHandler.updateProfileHandler); // update prof
 // GET /dosen/kelas-aing
 router.get('/kelas-aing', dosenHandler.getKelasByDosenId);
 router.get('/statistik-aing', dosenHandler.getStatistikDosen);
+=======
+router.get('/kelas-aing', authMiddleware, isDosenMiddleware, (req, res) =>
+  dosenHandler.getKelasByDosenId(req, res)
+);
+>>>>>>> 097fd6d (feat: add get all pendaftar api)
 
 export default router;

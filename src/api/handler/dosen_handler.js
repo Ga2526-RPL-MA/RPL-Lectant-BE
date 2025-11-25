@@ -39,7 +39,6 @@ class DosenHandler {
 
   getKelasByDosenId = async (req, res) => {
     try {
-      // Get dosen ID from authenticated user
       console.log("req.user:", req.user); 
       const dosenId = req.user?.dosenId;
 

@@ -10,16 +10,14 @@ import { sendResetEmail } from '../utils/sendEmail.js';
 
 const prisma = new PrismaClient();
 
-class AuthService {
+class UserService {
   async register(data) {
     const { email, password, role } = data;
     
-    // Validasi role
     if (!['dosen', 'mahasiswa'].includes(role)) {
       throw new Error('Invalid role. Must be "dosen" or "mahasiswa"');
     }
 
-    // Check if email already exists
     const existing = await prisma.users.findUnique({ 
       where: { email } 
     });
@@ -28,24 +26,20 @@ class AuthService {
       throw new Error('Email already registered');
     }
 
-    // Hash password menggunakan bcryptjs
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Extract nama dari email untuk default value
     const emailPrefix = email.split('@')[0];
     const nama = emailPrefix.replace(/[._]/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
 
-    // Gunakan transaction untuk memastikan atomicity
     try {
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Create user
         const user = await tx.users.create({
           data: {
             email,
-            password_hash,  // Field name: password_hash
+            password_hash,  
             role,
           },
         });
@@ -53,7 +47,6 @@ class AuthService {
         let dosen = null;
         let mahasiswa = null;
 
-        // 2. Create dosen atau mahasiswa berdasarkan role
         if (role === 'dosen') {
           dosen = await tx.dosen.create({
             data: {
@@ -61,14 +54,14 @@ class AuthService {
               nip: emailPrefix,
               jurusan: null,
               user: {
-                connect: { id_user: user.id_user }  // hubungkan ke user yang baru dibuat
+                connect: { id_user: user.id_user }  
               }
             },
           });
         } else if (role === 'mahasiswa') {
           mahasiswa = await tx.mahasiswa.create({
             data: {
-              user_id: user.id_user,  // FK to users.id_user
+              user_id: user.id_user,  
               nama: nama,
               nim: emailPrefix,
               jurusan: null,
@@ -82,14 +75,12 @@ class AuthService {
         timeout: 10000,
       });
 
-      // Hapus password dari response
       delete result.user.password_hash;
 
       return result;
     } catch (error) {
       console.error('Transaction error in register:', error);
-      
-      // Handle Prisma specific errors
+  
       if (error.code === 'P2002') {
         throw new Error('Email already registered');
       }
@@ -126,13 +117,11 @@ class AuthService {
         passwordLength: user.password_hash?.length
       });
 
-      // Check if password field exists
       if (!user.password_hash) {
         console.error('ERROR: Password field is null or undefined in database!');
         throw new Error('Password not found in database');
       }
 
-      // Verify password menggunakan bcryptjs
       console.log('Comparing passwords...');
       const match = await bcrypt.compare(password, user.password_hash);
       console.log('Password match:', match);
@@ -141,14 +130,12 @@ class AuthService {
         throw new Error('Invalid password');
       }
 
-      // Buat payload untuk JWT
       const payload = {
         id_user: user.id_user.toString(),
         email: user.email,
         role: user.role
       };
 
-      // Tambahkan dosenId atau mahasiswaId ke payload
       if (user.role === 'dosen' && user.dosen) {
         payload.dosenId = user.dosen?.id_user?.toString();
         payload.nama = user.dosen?.nama;
@@ -159,7 +146,6 @@ class AuthService {
         payload.nim = user.mahasiswa.nim;
       }
 
-      // Generate tokens menggunakan utility functions
       const accessToken = generateAccessToken(payload);
       const refreshToken = generateRefreshToken(payload);
 
@@ -185,10 +171,8 @@ class AuthService {
 
   async refreshToken(token) {
     try {
-      // Verify refresh token menggunakan utility function
       const payload = verifyRefreshToken(token);
 
-      // Get user data
       const user = await prisma.users.findUnique({
         where: { id_user: payload.id || payload.id_user },
         include: {
@@ -201,7 +185,6 @@ class AuthService {
         throw new Error('Invalid refresh token');
       }
 
-      // Generate new access token
       const newPayload = {
         id_user: user.id_user,
         email: user.email,
@@ -223,7 +206,6 @@ class AuthService {
 
   async forgotPassword(email_its, email_recovery) {
     try {
-      // Cari user berdasarkan email ITS
       const user = await prisma.users.findUnique({
         where: { email: email_its }
       });
@@ -232,13 +214,11 @@ class AuthService {
         throw new Error('User not found');
       }
 
-      // Generate reset token menggunakan access token
       const token = generateAccessToken({ 
         email: email_its,
         type: 'reset'
       });
 
-      // Update reset token di database
       await prisma.users.update({
         where: { email: email_its },
         data: {
@@ -247,10 +227,8 @@ class AuthService {
         }
       });
 
-      // Buat reset link
       const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
-      // Kirim email reset
       await sendResetEmail(email_recovery, resetLink);
 
       return {
@@ -264,14 +242,12 @@ class AuthService {
 
   async resetPassword(token, password) {
     try {
-      // Verify token menggunakan utility function
       const decoded = verifyAccessToken(token);
 
       if (!decoded.email) {
         throw new Error('Invalid or expired reset token');
       }
 
-      // Cari user dengan token yang valid
       const user = await prisma.users.findFirst({
         where: {
           email: decoded.email,
@@ -286,10 +262,8 @@ class AuthService {
         throw new Error('Invalid or expired reset token');
       }
 
-      // Hash new password menggunakan bcryptjs
       const hashed = await bcrypt.hash(password, 10);
 
-      // Update password di database dan clear reset token
       await prisma.users.update({
         where: { id_user: user.id_user },
         data: {
@@ -312,4 +286,4 @@ class AuthService {
   }
 }
 
-export default AuthService;
+export default UserService;

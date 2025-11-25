@@ -40,6 +40,7 @@ app.use((req, res, next) => {
 app.use("/auth", authRouter);
 app.use('/dosen', dosenRouter);
 app.use('/lowongan', lowonganRouter);
+app.use('/dosen/lowongan', lowonganRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome to RPL-Lectant Backend Express App!");
