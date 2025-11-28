@@ -29,9 +29,10 @@ class DosenRepository {
 
   async findKelasByDosenId(dosenId) {
     try {
+      // Query kelas berdasarkan dosen_id dengan join mata_kuliah
       const kelas = await prisma.kelas.findMany({
         where: {
-          id_dosen: BigInt(dosenId) 
+          id_dosen: BigInt(dosenId)
         },
         include: {
           mata_kuliah: {
@@ -49,11 +50,12 @@ class DosenRepository {
         }
       });
 
+      // Transform data untuk response
       return kelas.map(k => ({
         kode_matkul: k.mata_kuliah.kode_mk,
         nama_matkul: k.mata_kuliah.nama_mk,
         sks: k.mata_kuliah.jumlah_sks,
-        semester: this.getSemester(), 
+        semester: this.getSemester(), // Helper function untuk semester
       }));
     } catch (error) {
       console.error('Error in DosenRepository.findKelasByDosenId:', error);
@@ -107,6 +109,7 @@ async getStatistikDosen(dosenId) {
     return month >= 1 && month <= 6 ? 'genap' : 'ganjil';
   }
 
+  // Method untuk mendapatkan data dosen berdasarkan user_id
   async findDosenByUserId(userId) {
     try {
       const dosen = await prisma.dosen.findUnique({

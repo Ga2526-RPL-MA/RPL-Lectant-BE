@@ -36,11 +36,10 @@ class DosenHandler {
     }
   };
 
-
   getKelasByDosenId = async (req, res) => {
     try {
-      console.log("req.user:", req.user); 
-      const dosenId = req.user?.dosenId;
+      // Ambil dosenId dari token JWT (bukan userId)
+      const dosenId = req.user?.id_user;
 
       if (!dosenId) {
         return res.status(401).json({
