@@ -1,16 +1,19 @@
-import express from "express";
-import { PrismaClient } from "@prisma/client";
-import { register, login, refresh, logout, forgotPassword, resetPassword } from "../handler/user_handler.js";
-import { auth } from "../../middleware/authentication.js";
+// src/api/router/auth.router.js
+import { Router } from 'express';
+import AuthHandler from '../handler/user_handler.js';
+import { authMiddleware } from '../../middleware/authentication.js';
 
-const prisma = new PrismaClient();
-const router = express.Router();
+const router = Router();
+const authHandler = new AuthHandler();
 
-router.post("/register", register);
-router.post("/login", login);
-router.post("/refresh", refresh);
-router.post("/logout", logout);
-router.post("/forgot-password", auth, forgotPassword);
-router.post("/reset-password", resetPassword);
+// Authentication endpoints
+router.post('/register', authHandler.register);
+router.post('/login', authHandler.login);
+router.post('/refresh', authHandler.refresh);
+router.post('/logout', authHandler.logout);
+
+// Password reset endpoints
+router.post('/forgot-password', authMiddleware, authHandler.forgotPassword);
+router.post('/reset-password', authHandler.resetPassword);
 
 export default router;
