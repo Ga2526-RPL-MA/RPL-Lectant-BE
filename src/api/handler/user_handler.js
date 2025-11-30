@@ -102,24 +102,34 @@ export const logout = (req, res) => {
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
-  if (!email.endsWith("@gmail.com")) {
-    return res.status(400).json({ message: "Gunakan email @gmail.com" });
+  if (!email) {
+    return res.status(400).json({ message: "Email wajib diisi" });
   }
-
-  const user = findByEmail(email);
-  if (!user) return res.status(404).json({ message: "Email tidak ditemukan" });
-
-  const token = generateAccessToken({ email });
-  const resetLink = `http://localhost:4000/auth/reset-password?token=${token}`;
 
   try {
+    const user = await findUserByEmail(email);
+    
+    if (!user) {
+      return res.json({ 
+        message: "Jika email terdaftar, link reset password telah dikirim ke email Anda." 
+      });
+    }
+
+    const token = generateAccessToken({ email: email });
+
+    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+
     await sendResetEmail(email, resetLink);
-    res.json({ message: "Email reset password telah dikirim" });
+    
+    res.json({ 
+      message: "Link reset password telah dikirim ke email Anda." 
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Gagal mengirim email" });
+    console.error("Error in forgotPassword:", error);
+    res.status(500).json({ message: "Gagal mengirim email reset" });
   }
 };
+
 
 export const resetPassword = async (req, res) => {
   const { token, password } = req.body;
