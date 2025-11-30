@@ -5,8 +5,7 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
 } from "../utils/jwt.js";
-import { findUserByEmail, createUser, updatePassword } from "../repository/user_repository.js";
-import { findByEmail } from "../repository/user_repository.js";
+import { findUserByEmail, findUserByRecoveryEmail, createUser, updatePassword } from "../repository/user_repository.js";
 import { sendResetEmail } from "../utils/sendEmail.js";
 
 export const register = async (req, res) => {
@@ -100,14 +99,18 @@ export const logout = (req, res) => {
 };
 
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const { email_recovery } = req.body;
 
-  if (!email) {
+  if (!email_recovery) {
     return res.status(400).json({ message: "Email wajib diisi" });
   }
 
+  if (!email_recovery.includes('@')) {
+    return res.status(400).json({ message: "Format email tidak valid" });
+  }
+
   try {
-    const user = await findUserByEmail(email);
+    const user = await findUserByRecoveryEmail(email_recovery);
     
     if (!user) {
       return res.json({ 
@@ -115,11 +118,11 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const token = generateAccessToken({ email: email });
+    const token = generateAccessToken({ id_user: user.id_user.toString() });
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
-    await sendResetEmail(email, resetLink);
+    await sendResetEmail(email_recovery, resetLink, user.nama);
     
     res.json({ 
       message: "Link reset password telah dikirim ke email Anda." 
@@ -141,7 +144,7 @@ export const resetPassword = async (req, res) => {
   try {
     const decoded =  verifyAccessToken(token);;
     const hashed = await bcrypt.hash(password, 10);
-    const user = await updatePassword(decoded.email, hashed);
+    const user = await updatePassword(decoded.id_user, hashed);
 
     if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
 

@@ -8,18 +8,23 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendResetEmail(to, resetLink) {
+export async function sendResetEmail(emailRecipient, resetLink, nama = '') {
   const mailOptions = {
-    from: `"RPL Lectant Support" <${process.env.GMAIL_USER}>`,
-    to,
-    subject: "Reset Password Akun Mahasiswa ITS",
+    from: `"Sistem Lectant ITS" <${process.env.EMAIL_USER}>`,
+    to: emailRecipient,
+    subject: 'Reset Password - Lectant Support',
     html: `
-      <h3>Reset Password Akun ITS</h3>
-      <p>Halo,</p>
-      <p>Klik link di bawah untuk mengatur ulang password kamu:</p>
-      <a href="${resetLink}">${resetLink}</a>
-      <p>Link ini hanya berlaku selama 15 menit.</p>
-    `,
+      <h2>Reset Password</h2>
+      ${nama ? `<p>Halo ${nama},</p>` : ''}
+      <p>Anda telah meminta untuk mereset password. Klik link berikut untuk melanjutkan:</p>
+      <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+      <p>Atau copy link berikut ke browser Anda:</p>
+      <p>${resetLink}</p>
+      <p><strong>Link ini akan kadaluarsa dalam 1 jam.</strong></p>
+      <p>Jika Anda tidak meminta reset password, abaikan email ini.</p>
+      <hr>
+      <p style="color: #666; font-size: 12px;">Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
+    `
   };
 
   await transporter.sendMail(mailOptions);
