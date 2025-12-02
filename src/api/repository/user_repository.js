@@ -10,7 +10,7 @@ export const findUserByEmail = async (email) => {
       id_user: true,
       email: true,
       role: true,
-      password_hash: true, // WAJIB agar bcrypt bisa compare
+      password_hash: true, 
     },
   });
 };

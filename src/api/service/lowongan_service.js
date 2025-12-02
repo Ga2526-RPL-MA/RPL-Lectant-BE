@@ -8,20 +8,16 @@ class LowonganService {
 
   async updateStatusLowongan(idLowongan, status, dosenId) {
     try {
-      // 1. Cek apakah lowongan exists dan milik dosen ini
       const lowongan = await this.lowonganRepository.findLowonganById(idLowongan);
 
       if (!lowongan) {
         throw new Error('Lowongan not found');
       }
 
-      // 2. Validasi apakah dosen ini yang membuat lowongan
-      // Asumsi: lowongan memiliki field id_dosen atau relasi ke kelas
       if (Number(lowongan.id_dosen) !== Number(dosenId)) {
         throw new Error('Unauthorized');
         }
 
-      // 3. Update status lowongan dan status semua pendaftar
       const result = await this.lowonganRepository.updateStatusLowongan(
         idLowongan,
         status
@@ -33,6 +29,20 @@ class LowonganService {
       };
     } catch (error) {
       console.error('Error in LowonganService.updateStatusLowongan:', error);
+      throw error;
+    }
+  }
+
+    async getPendaftarByLowonganId(lowonganId, dosenId) {
+    try {
+      const data = await this.lowonganRepository.getPendaftarByLowonganId(
+        lowonganId,
+        dosenId
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error in LowonganService.getPendaftarByLowonganId:', error);
       throw error;
     }
   }
