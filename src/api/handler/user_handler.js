@@ -1,149 +1,239 @@
-import bcrypt from "bcryptjs";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyAccessToken,
-  verifyRefreshToken,
-} from "../utils/jwt.js";
-import { findUserByEmail, createUser, updatePassword } from "../repository/user_repository.js";
-import { sendResetEmail } from "../utils/sendEmail.js";
+// src/api/handler/auth.handler.js
+import AuthService from '../service/user_service.js';
 
-export const register = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password)
-      return res.status(400).json({ message: "Email dan kata sandi wajib diisi." });
-
-    let role;
-    if (/^[a-zA-Z0-9._%+-]+@student\.its\.ac\.id$/.test(email)) role = "mahasiswa";
-    else if (/^[a-zA-Z0-9._%+-]+@if\.its\.ac\.id$/.test(email)) role = "dosen";
-    else return res.status(400).json({ message: "Gunakan akun resmi ITS." });
-
-    const existing = await findUserByEmail(email);
-    if (existing) return res.status(409).json({ message: "Email sudah terdaftar." });
-
-    const hash = await bcrypt.hash(password, 10);
-    const user = await createUser({ email, password_hash: hash, role });
-
-    res.status(201).json({
-      success: true,
-      message: "Akun berhasil dibuat.",
-      data: { email: user.email, role: user.role },
-    });
-  } catch (err) {
-    console.error("Kesalahan saat register:", err);
-    res.status(500).json({ message: "Terjadi kesalahan pada server." });
-  }
-};
-
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password)
-      return res.status(400).json({ message: "Email dan kata sandi wajib diisi." });
-
-    const user = await findUserByEmail(email);
-    if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan." });
-
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) return res.status(401).json({ message: "Kata sandi salah." });
-
-    const payload = { id_user: user.id_user.toString(), role: user.role, email: user.email};
-    const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/auth/refresh",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({
-      success: true,
-      message: "Login berhasil.",
-      accessToken,
-      role: user.role,
-    });
-  } catch (err) {
-    console.error("Kesalahan saat login:", err);
-    res.status(500).json({ message: "Terjadi kesalahan pada server." });
-  }
-};
-
-export const refresh = async (req, res) => {
-  const token = req.cookies.refreshToken;
-  if (!token) return res.status(401).json({ message: "Token refresh tidak ditemukan." });
-
-  try {
-    const payload = verifyRefreshToken(token);
-    const newAccess = generateAccessToken({
-      id_user: payload.id_user,
-      role: payload.role,
-    });
-    res.json({ accessToken: newAccess, message: "Token baru berhasil dibuat." });
-  } catch {
-    res.status(403).json({ message: "Token refresh tidak valid atau kedaluwarsa." });
-  }
-};
-
-export const logout = (req, res) => {
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    path: "/auth/refresh",
-  });
-  res.json({ message: "Logout berhasil." });
-};
-
-export const forgotPassword = async (req, res) => {
-  const { email_recovery } = req.body;
-
-  if (!email_recovery.endsWith("@gmail.com")) {
-    return res.status(400).json({ message: "Gunakan email @gmail.com" });
+class AuthHandler {
+  constructor() {
+    this.authService = new AuthService();
   }
 
-  // email ITS berasal dari token login
-  const email_its = req.user.email;
-  if (!email_its) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  // Register new user (auto-detect role from email domain)
+  register = async (req, res) => {
+    try {
+      const { email, password } = req.body;
 
-  // Buat token reset berdasarkan email ITS
-  const token = generateAccessToken({ email: email_its });
+      // Validasi input dasar
+      if (!email || !password) {
+        return res.status(400).json({ 
+          message: 'Email dan kata sandi wajib diisi.' 
+        });
+      }
 
-  const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+      // Validasi email domain dan tentukan role otomatis
+      let role;
+      if (/^[a-zA-Z0-9._%+-]+@student\.its\.ac\.id$/.test(email)) {
+        role = 'mahasiswa';
+      } else if (/^[a-zA-Z0-9._%+-]+@if\.its\.ac\.id$/.test(email)) {
+        role = 'dosen';
+      } else {
+        return res.status(400).json({ 
+          message: 'Gunakan akun resmi ITS.' 
+        });
+      }
 
-  try {
-    await sendResetEmail(email_recovery, resetLink);
-    res.json({ message: "Link reset password telah dikirim ke email recovery Anda." });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Gagal mengirim email reset" });
-  }
-};
+      // Call service untuk register
+      const result = await this.authService.register({
+        email,
+        password,
+        role
+      });
 
+      return res.status(201).json({
+        success: true,
+        message: 'Akun berhasil dibuat.',
+        data: {
+          email: result.user.email,
+          role: result.user.role
+        }
+      });
+    } catch (error) {
+      console.error('Kesalahan saat register:', error);
+      
+      if (error.message === 'Email already registered') {
+        return res.status(409).json({
+          message: 'Email sudah terdaftar.'
+        });
+      }
 
-export const resetPassword = async (req, res) => {
-  const { token, password } = req.body;
+      return res.status(500).json({
+        message: 'Terjadi kesalahan pada server.'
+      });
+    }
+  };
 
-  if (!token || !password) {
-    return res.status(400).json({ message: "Token dan password wajib diisi" });
-  }
+  // Login user
+  login = async (req, res) => {
+    try {
+      const { email, password } = req.body;
 
-  try {
-    const decoded =  verifyAccessToken(token);;
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await updatePassword(decoded.email, hashed);
+      // Validasi input
+      if (!email || !password) {
+        return res.status(400).json({
+          message: 'Email dan kata sandi wajib diisi.'
+        });
+      }
 
-    if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
+      // Call service untuk login
+      const result = await this.authService.login(email, password);
 
-    res.json({ message: "Password berhasil direset" });
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ message: "Token tidak valid atau kadaluarsa" });
-  }
-};
+      // Set refresh token di httpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/auth/refresh',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
+      });
 
+      return res.status(200).json({
+        success: true,
+        message: 'Login berhasil.',
+        accessToken: result.token,
+        role: result.user.role
+      });
+    } catch (error) {
+      console.error('Kesalahan saat login:', error);
+
+      if (error.message === 'User not found') {
+        return res.status(404).json({
+          message: 'Pengguna tidak ditemukan.'
+        });
+      }
+
+      if (error.message === 'Invalid password') {
+        return res.status(401).json({
+          message: 'Kata sandi salah.'
+        });
+      }
+
+      return res.status(500).json({
+        message: 'Terjadi kesalahan pada server.'
+      });
+    }
+  };
+
+  // Refresh access token from cookie
+  refresh = async (req, res) => {
+    try {
+      // Ambil refresh token dari cookie
+      const token = req.cookies.refreshToken;
+
+      if (!token) {
+        return res.status(401).json({
+          message: 'Token refresh tidak ditemukan.'
+        });
+      }
+
+      // Call service untuk refresh token
+      const result = await this.authService.refreshToken(token);
+
+      return res.status(200).json({
+        accessToken: result.token,
+        message: 'Token baru berhasil dibuat.'
+      });
+    } catch (error) {
+      console.error('Kesalahan saat refresh:', error);
+
+      return res.status(403).json({
+        message: 'Token refresh tidak valid atau kedaluwarsa.'
+      });
+    }
+  };
+
+  // Logout user and clear cookie
+  logout = async (req, res) => {
+    try {
+      // Clear refresh token cookie
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/auth/refresh',
+      });
+
+      return res.status(200).json({
+        message: 'Logout berhasil.'
+      });
+    } catch (error) {
+      console.error('Kesalahan saat logout:', error);
+
+      return res.status(500).json({
+        message: 'Terjadi kesalahan pada server.'
+      });
+    }
+  };
+
+  // Forgot password - send reset link to recovery email
+  forgotPassword = async (req, res) => {
+    try {
+      const { email_recovery } = req.body;
+
+      // Validasi email recovery harus @gmail.com
+      if (!email_recovery || !email_recovery.endsWith('@gmail.com')) {
+        return res.status(400).json({
+          message: 'Gunakan email @gmail.com'
+        });
+      }
+
+      // Email ITS berasal dari token login (user sudah login)
+      const email_its = req.user?.email;
+      if (!email_its) {
+        return res.status(401).json({
+          message: 'Unauthorized'
+        });
+      }
+
+      // Call service untuk forgot password
+      await this.authService.forgotPassword(email_its, email_recovery);
+
+      return res.status(200).json({
+        message: 'Link reset password telah dikirim ke email recovery Anda.'
+      });
+    } catch (error) {
+      console.error('Kesalahan saat forgot password:', error);
+
+      return res.status(500).json({
+        message: 'Gagal mengirim email reset'
+      });
+    }
+  };
+
+  // Reset password with token from email
+  resetPassword = async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({
+          message: 'Token dan password wajib diisi'
+        });
+      }
+
+      // Call service untuk reset password
+      await this.authService.resetPassword(token, password);
+
+      return res.status(200).json({
+        message: 'Password berhasil direset'
+      });
+    } catch (error) {
+      console.error('Kesalahan saat reset password:', error);
+
+      if (error.message === 'Invalid or expired reset token') {
+        return res.status(400).json({
+          message: 'Token tidak valid atau kadaluarsa'
+        });
+      }
+
+      if (error.message === 'User not found') {
+        return res.status(404).json({
+          message: 'User tidak ditemukan'
+        });
+      }
+
+      return res.status(500).json({
+        message: 'Terjadi kesalahan pada server.'
+      });
+    }
+  };
+}
+
+export default AuthHandler;
