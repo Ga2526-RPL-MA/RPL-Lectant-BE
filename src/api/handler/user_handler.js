@@ -1,7 +1,8 @@
 // src/api/handler/auth.handler.js
 import AuthService from '../service/user_service.js';
 
-class AuthHandler {
+
+class userHandler {
   constructor() {
     this.authService = new AuthService();
   }
@@ -236,4 +237,5 @@ class AuthHandler {
   };
 }
 
-export default AuthHandler;
+
+export default userHandler;

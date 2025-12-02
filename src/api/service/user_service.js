@@ -1,4 +1,3 @@
-// src/api/service/auth.service.js
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import {
@@ -104,10 +103,6 @@ class AuthService {
 
   async login(email, password) {
     try {
-      console.log('=== LOGIN DEBUG ===');
-      console.log('Input email:', email);
-      console.log('Input password length:', password?.length);
-
       // Cari user berdasarkan email dengan relasi dosen/mahasiswa
       const user = await prisma.users.findUnique({
         where: { email },

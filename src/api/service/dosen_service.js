@@ -1,4 +1,5 @@
-import DosenRepository from "../repository/dosen_repository.js";
+// src/api/service/dosen.service.js
+import DosenRepository from '../repository/dosen_repository.js';
 
 class DosenService {
   constructor() {
@@ -37,21 +38,26 @@ class DosenService {
     try {
       const kelas = await this.dosenRepository.findKelasByDosenId(dosenId);
 
-      // Convert semua BigInt menjadi string menggunakan JSON replacer
-      const kelasResponse = JSON.parse(JSON.stringify(kelas, (_, v) =>
-        typeof v === 'bigint' ? v.toString() : v
-      ));
-
-      const result = kelasResponse.map(k => ({
-          kode_matkul: k.mata_kuliah.kode_mk,
-          nama_matkul: k.mata_kuliah.nama_mk,
-          sks: k.mata_kuliah.jumlah_sks // sudah string jika BigInt
-        
-      }));
-
-      return result;
+      // Data sudah ditransform di repository
+      return kelas;
     } catch (error) {
       console.error('Error in DosenService.getKelasByDosenId:', error);
+      throw error;
+    }
+  }
+
+  async getStatistikDosen(dosenId) {
+    try {
+      // Ambil semua data statistik dari repository
+      const statistik = await this.dosenRepository.getStatistikDosen(dosenId);
+      
+      return {
+        total_matkul: statistik.total_matkul.toString(),
+        jumlah_lowongan: statistik.jumlah_lowongan.toString(),
+        jumlah_asisten: statistik.jumlah_asisten
+      };
+    } catch (error) {
+      console.error('Error in DosenService.getStatistikDosen:', error);
       throw error;
     }
   }
