@@ -12,7 +12,7 @@ router.post('/refresh', userHandler.refresh);
 router.post('/logout', userHandler.logout);
 
 // Password reset endpoints
-router.post('/forgot-password', authMiddleware, userHandler.forgotPassword);
-router.post('/reset-password', userHandler.resetPassword);
+router.post('/forgot-password', authHandler.forgotPassword);
+router.post('/reset-password', authHandler.resetPassword);
 
 export default router;

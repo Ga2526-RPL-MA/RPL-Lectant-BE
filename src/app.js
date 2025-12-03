@@ -8,6 +8,7 @@ import authRouter from "./api/router/user_router.js";
 import lowonganRouter from './api/router/lowongan_router.js';
 import cors from "cors";
 
+const PORT = 4000;
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -46,3 +47,4 @@ app.get("/", (req, res) => {
 });
 
 export default app;
+
