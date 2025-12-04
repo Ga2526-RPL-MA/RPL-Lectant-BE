@@ -1,4 +1,3 @@
-// src/api/handler/lowongan.handler.js
 import LowonganService from '../service/lowongan_service.js';
 
 class LowonganHandler {
@@ -36,7 +35,6 @@ class LowonganHandler {
         });
       }
 
-      // Validasi lowonganId dari params harus sama dengan idLowongan dari body
       if (lowonganId !== idLowongan.toString()) {
         return res.status(400).json({
           success: false,
@@ -77,6 +75,39 @@ class LowonganHandler {
           success: false,
           message: 'Anda tidak memiliki akses untuk mengubah lowongan ini'
         });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  };
+
+    getPendaftarByLowonganId = async (req, res) => {
+    try {
+      const { lowonganId } = req.params;
+      const dosenId = req.user?.dosenId;
+
+      if (!dosenId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Dosen ID not found in token'
+        });
+      }
+
+      const result = await this.lowonganService.getPendaftarByLowonganId(lowonganId, dosenId);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getPendaftarByLowonganId:', error);
+
+      if (error.message === 'Lowongan not found') {
+        return res.status(404).json({ success: false, message: 'Lowongan tidak ditemukan' });
+      }
+
+      if (error.message === 'Unauthorized') {
+        return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses melihat pendaftar lowongan ini' });
       }
 
       return res.status(500).json({

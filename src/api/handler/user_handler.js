@@ -1,24 +1,22 @@
 // src/api/handler/auth.handler.js
-import AuthService from '../service/user_service.js';
+import UserService from '../service/user_service.js';
 
-class AuthHandler {
+
+class userHandler {
   constructor() {
-    this.authService = new AuthService();
+    this.UserService = new UserService();
   }
 
-  // Register new user (auto-detect role from email domain)
   register = async (req, res) => {
     try {
       const { email, password } = req.body;
 
-      // Validasi input dasar
       if (!email || !password) {
         return res.status(400).json({ 
           message: 'Email dan kata sandi wajib diisi.' 
         });
       }
 
-      // Validasi email domain dan tentukan role otomatis
       let role;
       if (/^[a-zA-Z0-9._%+-]+@student\.its\.ac\.id$/.test(email)) {
         role = 'mahasiswa';
@@ -30,7 +28,6 @@ class AuthHandler {
         });
       }
 
-      // Call service untuk register
       const result = await this.authService.register({
         email,
         password,
@@ -60,22 +57,18 @@ class AuthHandler {
     }
   };
 
-  // Login user
   login = async (req, res) => {
     try {
       const { email, password } = req.body;
 
-      // Validasi input
       if (!email || !password) {
         return res.status(400).json({
           message: 'Email dan kata sandi wajib diisi.'
         });
       }
 
-      // Call service untuk login
       const result = await this.authService.login(email, password);
 
-      // Set refresh token di httpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -111,10 +104,8 @@ class AuthHandler {
     }
   };
 
-  // Refresh access token from cookie
   refresh = async (req, res) => {
     try {
-      // Ambil refresh token dari cookie
       const token = req.cookies.refreshToken;
 
       if (!token) {
@@ -123,7 +114,6 @@ class AuthHandler {
         });
       }
 
-      // Call service untuk refresh token
       const result = await this.authService.refreshToken(token);
 
       return res.status(200).json({
@@ -139,10 +129,8 @@ class AuthHandler {
     }
   };
 
-  // Logout user and clear cookie
   logout = async (req, res) => {
     try {
-      // Clear refresh token cookie
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -162,19 +150,16 @@ class AuthHandler {
     }
   };
 
-  // Forgot password - send reset link to recovery email
   forgotPassword = async (req, res) => {
     try {
       const { email_recovery } = req.body;
 
-      // Validasi email recovery harus @gmail.com
       if (!email_recovery || !email_recovery.endsWith('@gmail.com')) {
         return res.status(400).json({
           message: 'Gunakan email @gmail.com'
         });
       }
 
-      // Email ITS berasal dari token login (user sudah login)
       const email_its = req.user?.email;
       if (!email_its) {
         return res.status(401).json({
@@ -182,7 +167,6 @@ class AuthHandler {
         });
       }
 
-      // Call service untuk forgot password
       await this.authService.forgotPassword(email_its, email_recovery);
 
       return res.status(200).json({
@@ -197,7 +181,6 @@ class AuthHandler {
     }
   };
 
-  // Reset password with token from email
   resetPassword = async (req, res) => {
     try {
       const { token, password } = req.body;
@@ -208,7 +191,6 @@ class AuthHandler {
         });
       }
 
-      // Call service untuk reset password
       await this.authService.resetPassword(token, password);
 
       return res.status(200).json({
@@ -236,4 +218,5 @@ class AuthHandler {
   };
 }
 
-export default AuthHandler;
+
+export default userHandler;

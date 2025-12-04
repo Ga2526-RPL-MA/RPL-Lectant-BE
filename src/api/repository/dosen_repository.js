@@ -28,38 +28,90 @@ class DosenRepository {
   };
 
   async findKelasByDosenId(dosenId) {
-   try {
+    try {
       const kelas = await prisma.kelas.findMany({
-         where: {
-          id_dosen: BigInt(dosenId) // pastikan tipe BigInt sesuai schema
+        where: {
+          id_dosen: BigInt(dosenId) 
         },
-        select: {
+        include: {
           mata_kuliah: {
             select: {
               kode_mk: true,
               nama_mk: true,
-              jumlah_sks: true,
+              jumlah_sks: true
             }
           }
         },
         orderBy: {
-          id_mk: 'asc'
+          mata_kuliah: {
+            kode_mk: 'asc'
+          }
         }
       });
-      console.log(kelas);
 
-      return kelas;
+      return kelas.map(k => ({
+        kode_matkul: k.mata_kuliah.kode_mk,
+        nama_matkul: k.mata_kuliah.nama_mk,
+        sks: k.mata_kuliah.jumlah_sks,
+        semester: this.getSemester(), 
+      }));
     } catch (error) {
       console.error('Error in DosenRepository.findKelasByDosenId:', error);
       throw error;
     }
   }
 
+async getStatistikDosen(dosenId) {
+  try {
+    const dosenIdBigInt = BigInt(dosenId);
+
+    const uniqueMatkul = await prisma.kelas.findMany({
+      where: { id_dosen: dosenIdBigInt },
+      select: { id_mk: true },
+      distinct: ['id_mk']
+    });
+    const totalMatkul = uniqueMatkul.length;
+
+    const jumlahLowongan = await prisma.lowongan.count({
+      where: {
+        id_dosen: dosenIdBigInt,
+        status: 'aktif'
+      }
+    });
+
+    const uniqueAsisten = await prisma.asistensi.findMany({
+      where: {
+        status: 'aktif',
+        lowongan: { id_dosen: dosenIdBigInt }
+      },
+      select: { id_mahasiswa: true },
+      distinct: ['id_mahasiswa']
+    });
+    const jumlahAsisten = uniqueAsisten.length;
+
+    return {
+      total_matkul: totalMatkul,
+      jumlah_lowongan: jumlahLowongan,
+      jumlah_asisten: jumlahAsisten
+    };
+
+  } catch (error) {
+    console.error('Error in DosenRepository.getStatistikDosen:', error);
+    throw error;
+  }
+}
+
+  getSemester() {
+    const month = new Date().getMonth() + 1; // 1-12
+    // Januari-Juni = Genap, Juli-Desember = Ganjil
+    return month >= 1 && month <= 6 ? 'genap' : 'ganjil';
+  }
+
   async findDosenByUserId(userId) {
     try {
       const dosen = await prisma.dosen.findUnique({
         where: {
-          id_user: userId  //first: (user_id) is changed to (id_user) to match prisma schema (delete this comment if dev is done)
+          id_user: userId
         },
         include: {
           user: {
