@@ -93,6 +93,8 @@ model pendaftaran {
   id_mahasiswa       BigInt
   status_pendaftaran status_pendaftaran_enum? @default(pending)
   tanggal_daftar     DateTime?                @default(now()) @db.Timestamp(6)
+  motivasi           String?
+  file_berkas        String?                  @db.VarChar(255)
   lowongan           lowongan                 @relation(fields: [id_lowongan], references: [id_lowongan], onDelete: NoAction, onUpdate: NoAction)
   mahasiswa          mahasiswa                @relation(fields: [id_mahasiswa], references: [id_user], onDelete: NoAction, onUpdate: NoAction)
 }

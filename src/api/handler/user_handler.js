@@ -4,7 +4,7 @@ import UserService from '../service/user_service.js';
 
 class UserHandler {
   constructor() {
-    this.UserService = new UserService();
+    this.authService = new UserService();
   }
 
   register = async (req, res) => {
@@ -262,7 +262,72 @@ class UserHandler {
       });
     }
   };
-}
 
+    getProfile = async (req, res) => {
+    try {
+      const userId = req.user.id_user;
+      
+      const user = await this.authService.getProfile(userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Profil berhasil diambil',
+        data: user
+      });
+    } catch (error) {
+      console.error('Error in AuthHandler.getProfile:', error);
+
+      if (error.message.includes('User tidak ditemukan')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal mendapatkan profil'
+      });
+    }
+  };
+
+  updateProfile = async (req, res) => {
+    try {
+      const userId = req.user.id_user;
+      const updateData = req.body;
+
+      if (!updateData || Object.keys(updateData).length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Data update wajib diisi'
+        });
+      }
+
+      const result = await this.authService.updateProfile(userId, updateData);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result.user
+      });
+    } catch (error) {
+      console.error('Error in AuthHandler.updateProfile:', error);
+
+      if (error.message.includes('Format email tidak valid') ||
+          error.message.includes('Email sudah digunakan') ||
+          error.message.includes('Data update wajib diisi')) {
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal mengupdate profil'
+      });
+    }
+  };
+};
 
 export default UserHandler;

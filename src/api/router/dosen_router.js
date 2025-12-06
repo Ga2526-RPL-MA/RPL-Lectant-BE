@@ -6,7 +6,6 @@ import { authorizeRole } from "../../middleware/rbacMiddleware.js";
 const router = Router();
 const dosenHandler = new DosenHandler();
 
-
 // Semua route butuh auth + role dosen
 router.use(authMiddleware, authorizeRole(["dosen"]));
 

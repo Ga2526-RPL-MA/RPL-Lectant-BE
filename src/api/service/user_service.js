@@ -189,6 +189,48 @@ class AuthService {
       throw new Error('Invalid or expired token');
     }
   }
+
+   async updateProfile(userId, updateData) {
+    try {
+      // Validasi data yang boleh diupdate
+      const allowedFields = ['nama', 'email'];
+      const filteredData = {};
+      
+      Object.keys(updateData).forEach(key => {
+        if (allowedFields.includes(key)) {
+          filteredData[key] = updateData[key];
+        }
+      });
+
+      // Validasi email jika diupdate
+      if (filteredData.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(filteredData.email)) {
+          throw new Error('Format email tidak valid');
+        }
+
+        // Cek email sudah digunakan oleh user lain
+        const existingUser = await this.userRepository.findByEmail(filteredData.email);
+        if (existingUser && existingUser.id_user !== userId) {
+          throw new Error('Email sudah digunakan');
+        }
+      }
+
+      // Update profile
+      const updatedUser = await this.userRepository.update(userId, filteredData);
+      
+      // Hapus password dari response
+      const { password_hash, ...userWithoutPassword } = updatedUser;
+      
+      return {
+        user: userWithoutPassword,
+        message: 'Profil berhasil diperbarui'
+      };
+    } catch (error) {
+      console.error('Error in AuthService.updateProfile:', error);
+      throw new Error('Gagal mengupdate profil');
+    }
+  }
 }
 
 export default UserService;
