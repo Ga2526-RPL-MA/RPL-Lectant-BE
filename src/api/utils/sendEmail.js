@@ -1,27 +1,22 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false, // TLS handled by STARTTLS
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
-export async function sendResetEmail(to, resetLink) {
-  const mailOptions = {
-    from: `"RPL Lectant Support" <${process.env.GMAIL_USER}>`,
+export const sendEmail = async ({ to, subject, text, html }) => {
+  const info = await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
     to,
-    subject: "Reset Password Akun Mahasiswa ITS",
-    html: `
-      <h3>Reset Password Akun ITS</h3>
-      <p>Halo,</p>
-      <p>Klik link di bawah untuk mengatur ulang password kamu:</p>
-      <a href="${resetLink}">${resetLink}</a>
-      <p>Link ini hanya berlaku selama 15 menit.</p>
-    `,
-  };
-
-  await transporter.sendMail(mailOptions);
-}
-
+    subject,
+    text,
+    html,
+  });
+  return info;
+};

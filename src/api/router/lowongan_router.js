@@ -1,12 +1,13 @@
 // src/api/router/lowongan.router.js
 import { Router } from 'express';
 import LowonganHandler from '../handler/lowongan_handler.js';
-import { authMiddleware, isDosenMiddleware } from '../../middleware/authentication.js';
+import { verifyToken } from "../../middleware/authentication.js";
+import { authorizeRole } from "../../middleware/rbacMiddleware.js";
 
 const router = Router();
 const lowonganHandler = new LowonganHandler();
 
-router.put('/:lowonganId/status', authMiddleware, isDosenMiddleware, lowonganHandler.updateStatusLowongan);
-router.get('/:lowonganId/pendaftar', authMiddleware, isDosenMiddleware, lowonganHandler.getPendaftarByLowonganId);
+router.put('/:lowonganId/status', verifyToken, authorizeRole([ "dosen", "admin"]), lowonganHandler.updateStatusLowongan);
+router.get('/:lowonganId/pendaftar', verifyToken, authorizeRole([ "dosen", "admin"]), lowonganHandler.getPendaftarByLowonganId);
 
 export default router;

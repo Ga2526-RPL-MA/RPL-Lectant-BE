@@ -1,289 +1,126 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 import {
   generateAccessToken,
   generateRefreshToken,
-  verifyAccessToken,
   verifyRefreshToken,
-} from '../utils/jwt.js';
-import { sendResetEmail } from '../utils/sendEmail.js';
+} from "../utils/jwt.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { 
+  findUserByAnyEmail, 
+  findUserByResetToken,
+  createUser, 
+  updateResetToken, 
+  updatePasswordAndClearToken 
+} from "../repository/user_repository.js";
+import crypto from "crypto";
 
-const prisma = new PrismaClient();
 
-class UserService {
-  async register(data) {
-    const { email, password, role } = data;
-    
-    if (!['dosen', 'mahasiswa'].includes(role)) {
-      throw new Error('Invalid role. Must be "dosen" or "mahasiswa"');
-    }
+export const registerUser = async (email, password) => {
+  if (!email || !password) throw { status: 400, message: "Email dan kata sandi wajib diisi." };
 
-    const existing = await prisma.users.findUnique({ 
-      where: { email } 
-    });
-    
-    if (existing) {
-      throw new Error('Email already registered');
-    }
+  let role;
+  if (/^[a-zA-Z0-9._%+-]+@student\.its\.ac\.id$/.test(email)) role = "mahasiswa";
+  else if (/^[a-zA-Z0-9._%+-]+@if\.its\.ac\.id$/.test(email)) role = "dosen";
+  else throw { status: 400, message: "Gunakan akun resmi ITS." };
 
-    const password_hash = await bcrypt.hash(password, 10);
+  const existing = await findUserByEmail(email);
+  if (existing) throw { status: 409, message: "Email sudah terdaftar." };
 
-    const emailPrefix = email.split('@')[0];
-    const nama = emailPrefix.replace(/[._]/g, ' ')
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  const hash = await bcrypt.hash(password, 10);
+  const user = await createUser({ email, password_hash: hash, role });
+  return { email: user.email, role: user.role };
+};
 
-    try {
-      const result = await prisma.$transaction(async (tx) => {
-        const user = await tx.users.create({
-          data: {
-            email,
-            password_hash,  
-            role,
-          },
-        });
+export const loginUser = async (email, password) => {
+  if (!email || !password) throw { status: 400, message: "Email dan kata sandi wajib diisi." };
 
-        let dosen = null;
-        let mahasiswa = null;
+  const user = await findUserByEmail(email);
+  if (!user) throw { status: 404, message: "Pengguna tidak ditemukan." };
 
-        if (role === 'dosen') {
-          dosen = await tx.dosen.create({
-            data: {
-              nama: nama,
-              nip: emailPrefix,
-              jurusan: null,
-              user: {
-                connect: { id_user: user.id_user }  
-              }
-            },
-          });
-        } else if (role === 'mahasiswa') {
-          mahasiswa = await tx.mahasiswa.create({
-            data: {
-              user_id: user.id_user,  
-              nama: nama,
-              nim: emailPrefix,
-              jurusan: null,
-            },
-          });
-        }
+  const match = await bcrypt.compare(password, user.password_hash);
+  if (!match) throw { status: 401, message: "Kata sandi salah." };
 
-        return { user, dosen, mahasiswa };
-      }, {
-        maxWait: 5000,
-        timeout: 10000,
-      });
+  const payload = { id_user: user.id_user.toString(), role: user.role };
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
 
-      delete result.user.password_hash;
+  return { accessToken, refreshToken, role: user.role };
+};
 
-      return result;
-    } catch (error) {
-      console.error('Transaction error in register:', error);
-  
-      if (error.code === 'P2002') {
-        throw new Error('Email already registered');
-      }
-      if (error.code === 'P2003') {
-        throw new Error('Foreign key constraint failed');
-      }
-      
-      throw error;
-    }
-  }
+export const refreshToken = (token) => {
+  const payload = verifyRefreshToken(token);
+  return generateAccessToken({ id_user: payload.id_user, role: payload.role });
+};
 
-  async login(email, password) {
-    try {
-      // Cari user berdasarkan email dengan relasi dosen/mahasiswa
-      const user = await prisma.users.findUnique({
-        where: { email },
-        include: {
-          dosen: true,
-          mahasiswa: true
-        }
-      });
+export const forgotPassword = async (email) => {
+  if (!email) throw { status: 400, message: "Email wajib diisi." };
 
-      console.log('User found:', !!user);
-      
-      if (!user) {
-        throw new Error('User not found');
-      }
+  // Cek di 3 tabel
+  const user = await findUserByAnyEmail(email);
+  if (!user) throw { status: 404, message: "Email tidak ditemukan." };
 
-      console.log('User data:', {
-        id_user: user.id_user,
-        email: user.email,
-        role: user.role,
-        hasPassword: !!user.password_hash,
-        passwordLength: user.password_hash?.length
-      });
+  // Cek email mahasiswa/dosen
+  const mhs = await prisma.mahasiswa.findUnique({
+    where: { id_user: user.id_user },
+    select: { email: true }
+  });
 
-      if (!user.password_hash) {
-        console.error('ERROR: Password field is null or undefined in database!');
-        throw new Error('Password not found in database');
-      }
+  const dsn = await prisma.dosen.findUnique({
+    where: { id_user: user.id_user },
+    select: { email: true }
+  });
 
-      console.log('Comparing passwords...');
-      const match = await bcrypt.compare(password, user.password_hash);
-      console.log('Password match:', match);
+  // list email yg dikirim
+  const targets = [
+    user.email,
+    mhs?.email,
+    dsn?.email
+  ].filter(Boolean);
 
-      if (!match) {
-        throw new Error('Invalid password');
-      }
+  // Generate token
+  const rawToken = crypto.randomBytes(20).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiryDate = new Date(Date.now() + 60 * 60 * 1000);
 
-      const payload = {
-        id_user: user.id_user.toString(),
-        email: user.email,
-        role: user.role
-      };
+  await updateResetToken(user.id_user, hashedToken, expiryDate);
 
-      if (user.role === 'dosen' && user.dosen) {
-        payload.dosenId = user.dosen?.id_user?.toString();
-        payload.nama = user.dosen?.nama;
-        payload.nip = user.dosen.nip;
-      } else if (user.role === 'mahasiswa' && user.mahasiswa) {
-        payload.mahasiswaId = user.mahasiswa?.id?.toString();
-        payload.nama = user.mahasiswa?.nama;
-        payload.nim = user.mahasiswa.nim;
-      }
+  // Kirim ke semua email
+  await Promise.all(
+    targets.map(to => sendEmail({
+      to,
+      subject: "Reset Password Anda",
+      html: `
+        <p>Klik link berikut untuk reset password:</p>
+        <p><a href="https://your-frontend-url.com/reset-password?token=${rawToken}">Reset Password</a></p>
+        <p>Token berlaku 1 jam.</p>
+      `,
+    }))
+  );
 
-      const accessToken = generateAccessToken(payload);
-      const refreshToken = generateRefreshToken(payload);
+  return { message: "Instruksi reset password telah dikirim ke semua email terkait." };
+};
 
-      console.log('Login successful');
-      console.log('==================');
 
-      return {
-        token: accessToken,
-        refreshToken: refreshToken,
-        user: {
-          id_user: user.id_user,
-          email: user.email,
-          role: user.role,
-          nama: payload.nama,
-          ...(user.role === 'dosen' ? { nip: payload.nip } : { nim: payload.nim })
-        }
-      };
-    } catch (error) {
-      console.error('Error in AuthService.login:', error);
-      throw error;
-    }
-  }
+/* ============================
+   RESET PASSWORD SERVICE
+============================= */
+export const resetPassword = async (rawToken, newPassword) => {
+  if (!rawToken || !newPassword)
+    throw { status: 400, message: "Token dan password baru wajib diisi." };
 
-  async refreshToken(token) {
-    try {
-      const payload = verifyRefreshToken(token);
+  // Hash token dari user (supaya bisa dicocokkan dengan DB)
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
 
-      const user = await prisma.users.findUnique({
-        where: { id_user: payload.id || payload.id_user },
-        include: {
-          dosen: true,
-          mahasiswa: true
-        }
-      });
+  // Cari user berdasarkan hashed token
+  const user = await findUserByResetToken(hashedToken);
+  if (!user) throw { status: 400, message: "Token tidak valid atau sudah kadaluarsa." };
 
-      if (!user) {
-        throw new Error('Invalid refresh token');
-      }
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      const newPayload = {
-        id_user: user.id_user,
-        email: user.email,
-        role: user.role,
-        dosenId: user.dosen?.id || null,
-        mahasiswaId: user.mahasiswa?.id || null
-      };
+  await updatePasswordAndClearToken(user.id_user, hashedPassword);
 
-      const newAccess = generateAccessToken(newPayload);
-
-      return {
-        token: newAccess
-      };
-    } catch (error) {
-      console.error('Error in AuthService.refreshToken:', error);
-      throw new Error('Invalid refresh token');
-    }
-  }
-
-  async forgotPassword(email_its, email_recovery) {
-    try {
-      const user = await prisma.users.findUnique({
-        where: { email: email_its }
-      });
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      const token = generateAccessToken({ 
-        email: email_its,
-        type: 'reset'
-      });
-
-      await prisma.users.update({
-        where: { email: email_its },
-        data: {
-          resetToken: token,
-          resetTokenExpiry: new Date(Date.now() + 3600000) // 1 jam
-        }
-      });
-
-      const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
-
-      await sendResetEmail(email_recovery, resetLink);
-
-      return {
-        message: 'Password reset link sent successfully'
-      };
-    } catch (error) {
-      console.error('Error in AuthService.forgotPassword:', error);
-      throw error;
-    }
-  }
-
-  async resetPassword(token, password) {
-    try {
-      const decoded = verifyAccessToken(token);
-
-      if (!decoded.email) {
-        throw new Error('Invalid or expired reset token');
-      }
-
-      const user = await prisma.users.findFirst({
-        where: {
-          email: decoded.email,
-          resetToken: token,
-          resetTokenExpiry: {
-            gte: new Date()
-          }
-        }
-      });
-
-      if (!user) {
-        throw new Error('Invalid or expired reset token');
-      }
-
-      const hashed = await bcrypt.hash(password, 10);
-
-      await prisma.users.update({
-        where: { id_user: user.id_user },
-        data: {
-          password_hash: hashed,
-          resetToken: null,
-          resetTokenExpiry: null
-        }
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error in AuthService.resetPassword:', error);
-      
-      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-        throw new Error('Invalid or expired reset token');
-      }
-      
-      throw error;
-    }
-  }
-}
-
-export default UserService;
+  return { message: "Password berhasil direset. Silakan login kembali." };
+};
