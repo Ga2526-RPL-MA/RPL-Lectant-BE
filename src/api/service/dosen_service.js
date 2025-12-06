@@ -13,15 +13,15 @@ class DosenService {
     }
 
     // Pastikan belum ada profil
-    const existing = await findDosenById(id_user);
+    const existing = await this.dosenRepository.findDosenById(id_user);
     if (existing) throw { status: 400, message: "Profil sudah ada." };
 
-    return await createDosen({ id_user, ...payload });
+    return await this.dosenRepository.createDosen({ id_user, ...payload });
   };
 
   // READ
   async getProfileService(id_user) {
-    const dosen = await findDosenById(id_user);
+    const dosen = await this.dosenRepository.findDosenById(id_user);
     if (!dosen) throw { status: 404, message: "Profil dosen tidak ditemukan." };
     return dosen;
   };
@@ -31,7 +31,7 @@ class DosenService {
     if (!payload.nama || !payload.nip || !payload.no_telepon || !payload.jurusan) {
       throw { status: 400, message: "Semua field wajib diisi." };
     }
-    return await updateDosen(id_user, payload);
+    return await this.dosenRepository.updateDosen(id_user, payload);
   };
 
   async getKelasByDosenId(dosenId) {
