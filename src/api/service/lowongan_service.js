@@ -59,21 +59,31 @@ class LowonganService {
   }
 
   // UPDATE STATUS LOWONGAN
-  async updateStatusLowongan(idLowongan, status, dosenId) {
-    try {
-      const lowongan = await this.lowonganRepository.findLowonganById(idLowongan);
-      if (!lowongan) throw new Error("Lowongan tidak ditemukan");
+// src/api/service/lowongan.service.js
+async updateStatusLowongan(idLowongan, status, dosenId) {
+  try {
+    const lowongan = await this.lowonganRepository.findLowonganById(idLowongan);
+    if (!lowongan) throw new Error("Lowongan tidak ditemukan");
 
-      // hanya dosen pemilik lowongan
-      if (Number(lowongan.id_dosen) !== Number(dosenId))
-        throw new Error("Unauthorized");
+    // validasi dosen pemilik
+    if (Number(lowongan.id_dosen) !== Number(dosenId))
+      throw new Error("Unauthorized");
 
-      return await this.lowonganRepository.updateStatusLowongan(idLowongan, status);
-    } catch (error) {
-      console.error("Service updateStatusLowongan:", error);
-      throw error;
-    }
+    // update status lowongan + status pendaftar di repository
+    await this.lowonganRepository.updateStatusLowongan(idLowongan, status);
+
+    // kembalikan pesan gabungan
+    return {
+      message: "Status lowongan berhasil diubah. Status pendaftar berhasil diubah",
+      id_lowongan: lowongan.id_lowongan,
+      nama_matkul: lowongan.matkul
+    };
+  } catch (error) {
+    console.error("Service updateStatusLowongan:", error);
+    throw error;
   }
+}
+
 
   // GET PENDAFTAR
   async getPendaftarByLowonganId(lowonganId, dosenId) {

@@ -116,6 +116,10 @@ class LowonganHandler {
       const { idLowongan, status } = req.body;
       const dosenId = req.user?.id_user;
 
+      console.log("req.user:", req.user); // cek token dan id_user
+    console.log("req.params.lowonganId:", lowonganId);
+    console.log("req.body.idLowongan:", idLowongan);
+
       if (!idLowongan || !status) {
         return res.status(400).json({ success: false, message: "idLowongan dan status wajib diisi" });
       }
@@ -131,6 +135,7 @@ class LowonganHandler {
       if (lowonganId !== idLowongan.toString()) {
         return res.status(400).json({ success: false, message: "Lowongan ID mismatch" });
       }
+      
 
       if (!dosenId) {
         return res.status(401).json({ success: false, message: "Token tidak memiliki dosenId" });

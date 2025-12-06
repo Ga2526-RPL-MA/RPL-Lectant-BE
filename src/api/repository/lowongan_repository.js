@@ -154,6 +154,8 @@ class LowonganRepository {
       if (!lowongan) return null;
 
       return {
+        id_lowongan: lowongan.id_lowongan,   // tambahkan
+        id_dosen: lowongan.id_dosen,         // tambahkan
         matkul: lowongan.kelas?.mata_kuliah?.nama_mk,
         dosen: lowongan.dosen?.nama,
         jadwal: this.formatJadwal(lowongan.kelas.hari, lowongan.kelas.jam_mulai, lowongan.kelas.jam_selesai),
