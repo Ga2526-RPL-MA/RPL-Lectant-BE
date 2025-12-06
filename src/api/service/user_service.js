@@ -7,6 +7,7 @@ import {
 import { sendEmail } from "../utils/sendEmail.js";
 import { 
   findUserByAnyEmail, 
+  findUserByEmail,
   findUserByResetToken,
   createUser, 
   updateResetToken, 
