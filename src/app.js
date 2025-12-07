@@ -3,14 +3,13 @@ dotenv.config();
 
 import express from "express";
 import cookieParser from "cookie-parser";
-import dosenRouter from "./api/router/dosen_router.js";
 import authRouter from "./api/router/user_router.js";
 import dosenRouter from "./api/router/dosen_router.js";
 import lowonganRouter from './api/router/lowongan_router.js';
+import lamaranRouter from './api/router/lamaran_router.js';
 import cors from "cors";
 
 const app = express();
-const PORT = 4000;
 app.use(express.json());
 app.use(cookieParser());
 
@@ -41,6 +40,7 @@ app.use("/auth", authRouter);
 app.use('/dosen', dosenRouter);
 app.use('/lowongan', lowonganRouter);
 app.use('/dosen/lowongan', lowonganRouter);
+app.use('/mahasiswa', lamaranRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome to RPL-Lectant Backend Express App!");

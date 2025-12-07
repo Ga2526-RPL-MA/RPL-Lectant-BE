@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import userHandler from '../handler/user_handler.js';
+import UserHandler from '../handler/user_handler.js';
 import { authMiddleware } from '../../middleware/authentication.js';
 
 const router = Router();
-const userHandler = new userHandler();
+const userHandler = new UserHandler();
 
 // Authentication endpoints
 router.post('/register', userHandler.register);

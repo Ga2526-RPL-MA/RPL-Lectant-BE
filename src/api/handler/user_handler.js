@@ -1,10 +1,8 @@
-// src/api/handler/auth.handler.js
 import UserService from '../service/user_service.js';
 
-
-class userHandler {
+class UserHandler {
   constructor() {
-    this.UserService = new UserService();
+    this.authService = new UserService();
   }
 
   register = async (req, res) => {
@@ -219,4 +217,4 @@ class userHandler {
 }
 
 
-export default userHandler;
+export default UserHandler;
