@@ -5,7 +5,6 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import dosenRouter from "./api/router/dosen_router.js";
 import authRouter from "./api/router/user_router.js";
-import dosenRouter from "./api/router/dosen_router.js";
 import lowonganRouter from './api/router/lowongan_router.js';
 import cors from "cors";
 

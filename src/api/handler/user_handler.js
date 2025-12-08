@@ -2,7 +2,7 @@
 import UserService from '../service/user_service.js';
 
 
-class userHandler {
+class UserHandler {
   constructor() {
     this.UserService = new UserService();
   }
@@ -28,7 +28,7 @@ class userHandler {
         });
       }
 
-      const result = await this.authService.register({
+      const result = await this.UserService.register({
         email,
         password,
         role
@@ -67,7 +67,7 @@ class userHandler {
         });
       }
 
-      const result = await this.authService.login(email, password);
+      const result = await this.UserService.login(email, password);
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
@@ -219,4 +219,4 @@ class userHandler {
 }
 
 
-export default userHandler;
+export default UserHandler;
