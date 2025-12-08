@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Router } from 'express';
 import { authMiddleware } from "../../middleware/authentication.js";
 import DosenHandler from '../handler/dosen_handler.js';
@@ -20,3 +21,20 @@ router.get('/kelas-aing', dosenHandler.getKelasByDosenId);
 router.get('/statistik-aing', dosenHandler.getStatistikDosen);
 
 export default router;
+=======
+// src/router/dosen_router.js
+
+import express from "express";
+import { auth } from "../../middleware/authentication.js";
+import DosenHandler from '../handler/dosen_handler.js';
+
+const router = express.Router();
+const dosenHandler = new DosenHandler();
+
+// Route untuk get kelas by dosen
+// Endpoint: GET /dosen/kelas-aing
+// Need Auth: yes
+router.get("/kelas-aing", auth, dosenHandler.getKelasByDosenId);
+
+export default router;
+>>>>>>> f86ed4f (fix: fix automatic registration)
