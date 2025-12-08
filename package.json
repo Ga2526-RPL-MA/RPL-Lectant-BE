@@ -5,12 +5,11 @@
   "main": "src/app.js",
   "type": "module",
   "scripts": {
-  "dev": "nodemon api/index.js",
-  "start": "node api/index.js",
-  "lint": "eslint .",
-  "postinstall": "prisma generate"
-}
-,
+    "dev": "nodemon api/index.js",
+    "start": "node api/index.js",
+    "lint": "eslint .",
+    "postinstall": "prisma generate"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Ga2526-RPL-MA/RPL-Lectant-BE.git"
@@ -44,7 +43,7 @@
     "serverless-http": "^4.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
+    "nodemon": "^3.1.11",
     "prisma": "^6.18.0"
   }
 }
