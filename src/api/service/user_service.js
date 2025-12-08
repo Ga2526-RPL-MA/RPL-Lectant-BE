@@ -44,32 +44,7 @@ class UserService {
           },
         });
 
-        let dosen = null;
-        let mahasiswa = null;
-
-        if (role === 'dosen') {
-          dosen = await tx.dosen.create({
-            data: {
-              nama: nama,
-              nip: emailPrefix,
-              jurusan: null,
-              user: {
-                connect: { id_user: user.id_user }  
-              }
-            },
-          });
-        } else if (role === 'mahasiswa') {
-          mahasiswa = await tx.mahasiswa.create({
-            data: {
-              user_id: user.id_user,  
-              nama: nama,
-              nim: emailPrefix,
-              jurusan: null,
-            },
-          });
-        }
-
-        return { user, dosen, mahasiswa };
+        return { user};
       }, {
         maxWait: 5000,
         timeout: 10000,

@@ -6,7 +6,7 @@ const router = Router();
 const userHandler = new UserHandler();
 
 // Authentication endpoints
-router.post('/register',userHandler.register);
+router.post('/register', userHandler.register);
 router.post('/login', userHandler.login);
 router.post('/refresh', userHandler.refresh);
 router.post('/logout', userHandler.logout);
