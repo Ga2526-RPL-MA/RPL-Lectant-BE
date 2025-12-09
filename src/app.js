@@ -37,7 +37,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// routes
 app.use("/auth", authRouter);
 app.use('/dosen', dosenRouter);
 app.use('/lowongan', lowonganRouter);
