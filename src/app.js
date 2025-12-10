@@ -3,13 +3,11 @@ dotenv.config();
 
 import express from "express";
 import cookieParser from "cookie-parser";
-import dosenRouter from "./api/router/dosen_router.js";
 import authRouter from "./api/router/user_router.js";
 import lowonganRouter from './api/router/lowongan_router.js';
 import lamaranRouter from './api/router/lamaran_router.js';
 import cors from "cors";
 
-const PORT = 4000;
 const app = express();
 app.use(express.json());
 app.use(cookieParser());

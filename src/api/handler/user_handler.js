@@ -1,6 +1,4 @@
-// src/api/handler/auth.handler.js
 import UserService from '../service/user_service.js';
-
 
 class UserHandler {
   constructor() {

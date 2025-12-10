@@ -21,4 +21,9 @@ router.get(
   lamaranHandler.getLamaranSaya
 );
 
+router.get(
+    '/lamaran/lamaran-saya/:idLamaran', authMiddleware, authorizeRole(['mahasiswa']),
+    lamaranHandler.getDetailLamaran
+);
+
 export default router;
