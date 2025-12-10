@@ -9,7 +9,7 @@ class DosenHandler {
   // CREATE
   createProfileHandler = async (req, res) => {
     try {
-      const profile = await createProfileService(req.user.id_user, req.body);
+      const profile = await this.dosenService.createProfileService(req.user.id_user, req.body);
       res.status(201).json({ success: true, data: profile });
     } catch (err) {
       res.status(err.status || 500).json({ success: false, message: err.message || "Internal server error." });
@@ -19,7 +19,7 @@ class DosenHandler {
   // READ
   getProfileHandler = async (req, res) => {
     try {
-      const profile = await getProfileService(req.user.id_user);
+      const profile = await this.dosenService.getProfileService(req.user.id_user);
       res.status(200).json({ success: true, data: profile });
     } catch (err) {
       res.status(err.status || 500).json({ success: false, message: err.message || "Internal server error." });
@@ -29,7 +29,7 @@ class DosenHandler {
   // UPDATE
   updateProfileHandler = async (req, res) => {
     try {
-      const profile = await updateProfileService(req.user.id_user, req.body);
+      const profile = await this.dosenService.updateProfileService(req.user.id_user, req.body);
       res.status(200).json({ success: true, data: profile });
     } catch (err) {
       res.status(err.status || 500).json({ success: false, message: err.message || "Internal server error." });
@@ -38,7 +38,7 @@ class DosenHandler {
 
   getKelasByDosenId = async (req, res) => {
     try {
-      // Ambil dosenId dari token JWT (bukan userId)
+      console.log("req.user:", req.user); 
       const dosenId = req.user?.id_user;
 
       if (!dosenId) {
@@ -63,7 +63,7 @@ class DosenHandler {
   getStatistikDosen = async (req, res) => {
     try {
       // Ambil dosenId dari token JWT
-      const dosenId = req.user?.dosenId;
+      const dosenId = req.user?.id_user;
 
       if (!dosenId) {
         return res.status(401).json({

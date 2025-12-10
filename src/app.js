@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import authRouter from "./api/router/user_router.js";
 import lowonganRouter from './api/router/lowongan_router.js';
 import lamaranRouter from './api/router/lamaran_router.js';
+import mahasiswa from './api/router/mahasiswa_router.js';
 import cors from "cors";
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/dosen', dosenRouter);
 app.use('/lowongan', lowonganRouter);
 app.use('/dosen/lowongan', lowonganRouter);
 app.use('/mahasiswa', lamaranRouter);
+app.use('/mahasiswa', mahasiswa);
 
 app.get("/", (req, res) => {
   res.send("Welcome to RPL-Lectant Backend Express App!");

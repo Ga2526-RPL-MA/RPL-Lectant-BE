@@ -1,18 +1,25 @@
-import { Router } from 'express';
-import UserHandler from '../handler/user_handler.js';
-import { authMiddleware } from '../../middleware/authentication.js';
+import express from "express";
+import {
+  register,
+  login,
+  refresh,
+  logout,
+  forgot,
+  reset,
+} from "../handler/user_handler.js";
 
-const router = Router();
-const userHandler = new UserHandler();
+const router = express.Router();
 
-// Authentication endpoints
-router.post('/register', userHandler.register);
-router.post('/login', userHandler.login);
-router.post('/refresh', userHandler.refresh);
-router.post('/logout', userHandler.logout);
+// AUTH
+router.post("/register", register);
+router.post("/login", login);
 
-// Password reset endpoints
-router.post('/forgot-password', authHandler.forgotPassword);
-router.post('/reset-password', authHandler.resetPassword);
+// REFRESH + LOGOUT
+router.post("/refresh", refresh);
+router.post("/logout", logout);
+
+// PASSWORD RESET
+router.post("/forgot-password", forgot);
+router.post("/reset-password", reset);
 
 export default router;

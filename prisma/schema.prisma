@@ -23,7 +23,7 @@ model mahasiswa {
   id_user     BigInt        @id
   nrp         String?       @db.VarChar
   nama        String?       @db.VarChar
-  email       String?       @db.VarChar
+  email       String        @unique(map: "email_mahasiswa") @db.VarChar
   no_telepon  String?       @db.VarChar
   jurusan     String?       @db.VarChar
   angkatan    String?       @db.VarChar
@@ -100,14 +100,16 @@ model pendaftaran {
 }
 
 model users {
-  id_user       BigInt         @id @default(autoincrement())
-  email         String         @unique @db.VarChar
-  password_hash String
-  role          user_role_enum @default(mahasiswa)
-  created_at    DateTime?      @default(now()) @db.Timestamp(6)
-  updated_at    DateTime?      @default(now()) @db.Timestamp(6)
-  dosen         dosen?
-  mahasiswa     mahasiswa?
+  id_user            BigInt         @id @default(autoincrement())
+  email              String         @unique @db.VarChar
+  password_hash      String
+  role               user_role_enum @default(mahasiswa)
+  created_at         DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?      @default(now()) @db.Timestamp(6)
+  reset_token        String?
+  reset_token_expiry DateTime?      @db.Timestamp(6)
+  dosen              dosen?
+  mahasiswa          mahasiswa?
 }
 
 model asistensi {

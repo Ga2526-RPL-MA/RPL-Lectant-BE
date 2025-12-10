@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import { authMiddleware } from "../../middleware/authentication.js";
+import { verifyToken } from "../../middleware/authentication.js";
 import DosenHandler from '../handler/dosen_handler.js';
 import { authorizeRole } from "../../middleware/rbacMiddleware.js";
 
 const router = Router();
 const dosenHandler = new DosenHandler();
 
+
 // Semua route butuh auth + role dosen
-router.use(authMiddleware, authorizeRole(["dosen"]));
+router.use(verifyToken, authorizeRole(["dosen"]));
 
 // Routes
 router.post("/profile-aing", dosenHandler.createProfileHandler); // buat profil baru

@@ -1,12 +1,73 @@
-// src/api/router/lowongan.router.js
 import { Router } from 'express';
 import LowonganHandler from '../handler/lowongan_handler.js';
-import { authMiddleware, isDosenMiddleware } from '../../middleware/authentication.js';
+import { verifyToken } from "../../middleware/authentication.js";
+import { authorizeRole } from "../../middleware/rbacMiddleware.js";
+import { checkProfileComplete } from "../../middleware/profileChecking.js";
 
 const router = Router();
 const lowonganHandler = new LowonganHandler();
 
-router.put('/:lowonganId/status', authMiddleware, isDosenMiddleware, lowonganHandler.updateStatusLowongan);
-router.get('/:lowonganId/pendaftar', authMiddleware, isDosenMiddleware, lowonganHandler.getPendaftarByLowonganId);
+// CREATE LOWONGAN (hanya dosen)
+router.post(
+  '/',
+  verifyToken,
+  checkProfileComplete(['dosen']),   // cek profile dosen lengkap
+  authorizeRole(['dosen']),
+  lowonganHandler.createLowongan
+);
+
+// GET ALL LOWONGAN (mahasiswa, dosen, admin)
+router.get(
+  '/all',
+  verifyToken,
+  checkProfileComplete(['mahasiswa', 'dosen']),
+  authorizeRole(['mahasiswa', 'dosen', 'admin']),
+  lowonganHandler.getAllLowongan
+);
+
+// GET LOWONGAN BY ID (mahasiswa, dosen, admin)
+router.get(
+  '/:lowonganId',
+  verifyToken,
+  checkProfileComplete(['mahasiswa', 'dosen']),
+  authorizeRole(['mahasiswa', 'dosen', 'admin']),
+  lowonganHandler.getLowonganById
+);
+
+// UPDATE LOWONGAN (hanya dosen)
+router.put(
+  '/:lowonganId',
+  verifyToken,
+  checkProfileComplete(['dosen']),
+  authorizeRole(['dosen']),
+  lowonganHandler.updateLowongan
+);
+
+// DELETE LOWONGAN (dosen, admin)
+router.delete(
+  '/:lowonganId',
+  verifyToken,
+  checkProfileComplete(['dosen', 'admin']),
+  authorizeRole(['dosen', 'admin']),
+  lowonganHandler.deleteLowongan
+);
+
+// UPDATE STATUS LOWONGAN (dosen, admin)
+router.put(
+  '/:lowonganId/status',
+  verifyToken,
+  checkProfileComplete(['dosen', 'admin']),
+  authorizeRole(['dosen', 'admin']),
+  lowonganHandler.updateStatusLowongan
+);
+
+// GET PENDAFTAR BY LOWONGAN (dosen, admin)
+router.get(
+  '/:lowonganId/pendaftar',
+  verifyToken,
+  checkProfileComplete(['dosen', 'admin']),
+  authorizeRole(['dosen', 'admin']),
+  lowonganHandler.getPendaftarByLowonganId
+);
 
 export default router;

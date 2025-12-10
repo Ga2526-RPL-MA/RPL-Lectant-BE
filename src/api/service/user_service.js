@@ -1,236 +1,127 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import UserRepository from '../repository/user_repository.js';
-import EmailService from '../utils/sendEmail.js';
+import bcrypt from "bcryptjs";
 import {
   generateAccessToken,
   generateRefreshToken,
-  verifyAccessToken,
-  verifyRefreshToken
-} from '../utils/jwt.js';
+  verifyRefreshToken,
+} from "../utils/jwt.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { 
+  findUserByAnyEmail, 
+  findUserByEmail,
+  findUserByResetToken,
+  createUser, 
+  updateResetToken, 
+  updatePasswordAndClearToken 
+} from "../repository/user_repository.js";
+import crypto from "crypto";
 
-class AuthService {
-  constructor() {
-    this.userRepository = new UserRepository();
-    this.emailService = new EmailService();
-  }
 
-  // Register user
-  async register({ email, password, role }) {
-    // Cek apakah email sudah terdaftar
-    const existingUser = await this.userRepository.findUserByEmail(email);
-    if (existingUser) {
-      throw new Error('Email already registered');
-    }
+export const registerUser = async (email, password) => {
+  if (!email || !password) throw { status: 400, message: "Email dan kata sandi wajib diisi." };
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+  let role;
+  if (/^[a-zA-Z0-9._%+-]+@student\.its\.ac\.id$/.test(email)) role = "mahasiswa";
+  else if (/^[a-zA-Z0-9._%+-]+@if\.its\.ac\.id$/.test(email)) role = "dosen";
+  else throw { status: 400, message: "Gunakan akun resmi ITS." };
 
-    // Buat user baru
-    const userData = {
-      email,
-      password_hash: hashedPassword,
-      role
-    };
+  const existing = await findUserByEmail(email);
+  if (existing) throw { status: 409, message: "Email sudah terdaftar." };
 
-    const user = await this.userRepository.createUser(userData);
-    
-    return {
-      user: {
-        email: user.email,
-        role: user.role
-      }
-    };
-  }
+  const hash = await bcrypt.hash(password, 10);
+  const user = await createUser({ email, password_hash: hash, role });
+  return { email: user.email, role: user.role };
+};
 
-  // Login user
-  async login(email, password) {
-    // Cari user
-    const user = await this.userRepository.findUserByEmail(email);
-    if (!user) {
-      throw new Error('User not found');
-    }
+export const loginUser = async (email, password) => {
+  if (!email || !password) throw { status: 400, message: "Email dan kata sandi wajib diisi." };
 
-    // Verifikasi password
-    const isValid = await bcrypt.compare(password, user.password_hash);
-    if (!isValid) {
-      throw new Error('Invalid password');
-    }
+  const user = await findUserByEmail(email);
+  if (!user) throw { status: 404, message: "Pengguna tidak ditemukan." };
 
-    // Generate tokens menggunakan fungsi dari jwt.js
-    const tokenPayload = {
-      id_user: user.id_user.toString(),
-      email: user.email,
-      role: user.role
-    };
+  const match = await bcrypt.compare(password, user.password_hash);
+  if (!match) throw { status: 401, message: "Kata sandi salah." };
 
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+  const payload = { id_user: user.id_user.toString(), role: user.role };
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
 
-    return {
-      user: {
-        id_user: user.id_user,
-        email: user.email,
-        role: user.role
-      },
-      token: accessToken,
-      refreshToken
-    };
-  }
+  return { accessToken, refreshToken, role: user.role };
+};
 
-  // Refresh token
-  async refreshToken(token) {
-    try {
-      const decoded = verifyRefreshToken(token);
-      
-      const newPayload = {
-        id_user: decoded.id_user,
-        email: decoded.email,
-        role: decoded.role
-      };
+export const refreshToken = (token) => {
+  const payload = verifyRefreshToken(token);
+  return generateAccessToken({ id_user: payload.id_user, role: payload.role });
+};
 
-      const newAccessToken = generateAccessToken(newPayload);
+export const forgotPassword = async (email) => {
+  if (!email) throw { status: 400, message: "Email wajib diisi." };
 
-      return {
-        token: newAccessToken
-      };
-    } catch (error) {
-      throw new Error('Invalid refresh token');
-    }
-  }
+  // Cek di 3 tabel
+  const user = await findUserByAnyEmail(email);
+  if (!user) throw { status: 404, message: "Email tidak ditemukan." };
 
-  // Request password reset
-  async requestPasswordReset(emailRecovery) {
-    const user = await this.userRepository.findUserByRecoveryEmail(emailRecovery);
-    
-    if (!user) {
-      return null; // Return null untuk security
-    }
+  // Cek email mahasiswa/dosen
+  const mhs = await prisma.mahasiswa.findUnique({
+    where: { id_user: user.id_user },
+    select: { email: true }
+  });
 
-    // Generate reset token menggunakan ACCESS_SECRET dengan expiry 1 jam
-    const resetTokenPayload = {
-      id_user: user.id_user.toString(),
-      email: user.email,
-      purpose: 'password_reset'
-    };
+  const dsn = await prisma.dosen.findUnique({
+    where: { id_user: user.id_user },
+    select: { email: true }
+  });
 
-    // Buat token reset khusus (bisa menggunakan ACCESS_SECRET atau secret khusus)
-    const resetToken = generateAccessToken(resetTokenPayload); // 15 menit default
+  // list email yg dikirim
+  const targets = [
+    user.email,
+    mhs?.email,
+    dsn?.email
+  ].filter(Boolean);
 
-    // Atau buat token khusus untuk reset dengan expiry 1 jam
-    // const resetToken = jwt.sign(resetTokenPayload, ACCESS_SECRET, { expiresIn: '1h' });
+  // Generate token
+  const rawToken = crypto.randomBytes(20).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiryDate = new Date(Date.now() + 60 * 60 * 1000);
 
-    // Kirim email
-    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    await this.emailService.sendResetEmail(emailRecovery, resetLink, user.nama);
+  await updateResetToken(user.id_user, hashedToken, expiryDate);
 
-    return {
-      token: resetToken,
-      email: user.email
-    };
-  }
+  // Kirim ke semua email
+  await Promise.all(
+    targets.map(to => sendEmail({
+      to,
+      subject: "Reset Password Anda",
+      html: `
+        <p>Klik link berikut untuk reset password:</p>
+        <p><a href="https://your-frontend-url.com/reset-password?token=${rawToken}">Reset Password</a></p>
+        <p>Token berlaku 1 jam.</p>
+      `,
+    }))
+  );
 
-  // Reset password
-  async resetPassword(token, newPassword) {
-    try {
-      // Verifikasi token menggunakan verifyAccessToken
-      const decoded = verifyAccessToken(token);
-      
-      // Pastikan token untuk password reset
-      if (decoded.purpose !== 'password_reset') {
-        throw new Error('Invalid token purpose');
-      }
-      
-      // Hash password baru
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
-      // Update password
-      const updatedUser = await this.userRepository.updatePassword(
-        decoded.id_user,
-        hashedPassword
-      );
+  return { message: "Instruksi reset password telah dikirim ke semua email terkait." };
+};
 
-      if (!updatedUser) {
-        throw new Error('User tidak ditemukan');
-      }
 
-      return {
-        success: true,
-        user: {
-          email: updatedUser.email
-        }
-      };
-    } catch (error) {
-      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-        throw new Error('Token tidak valid atau kadaluarsa');
-      }
-      throw error;
-    }
-  }
+/* ============================
+   RESET PASSWORD SERVICE
+============================= */
+export const resetPassword = async (rawToken, newPassword) => {
+  if (!rawToken || !newPassword)
+    throw { status: 400, message: "Token dan password baru wajib diisi." };
 
-  // Get user by email
-  async getUserByEmail(email) {
-    const user = await this.userRepository.findUserByEmail(email);
-    
-    if (!user) {
-      return null;
-    }
+  // Hash token dari user (supaya bisa dicocokkan dengan DB)
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
 
-    // Hapus password dari response
-    const { password_hash, ...userWithoutPassword } = user;
-    return userWithoutPassword;
-  }
+  // Cari user berdasarkan hashed token
+  const user = await findUserByResetToken(hashedToken);
+  if (!user) throw { status: 400, message: "Token tidak valid atau sudah kadaluarsa." };
 
-  // Verify user token (untuk middleware)
-  async verifyToken(token) {
-    try {
-      return verifyAccessToken(token);
-    } catch (error) {
-      throw new Error('Invalid or expired token');
-    }
-  }
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-   async updateProfile(userId, updateData) {
-    try {
-      // Validasi data yang boleh diupdate
-      const allowedFields = ['nama', 'email'];
-      const filteredData = {};
-      
-      Object.keys(updateData).forEach(key => {
-        if (allowedFields.includes(key)) {
-          filteredData[key] = updateData[key];
-        }
-      });
+  await updatePasswordAndClearToken(user.id_user, hashedPassword);
 
-      // Validasi email jika diupdate
-      if (filteredData.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(filteredData.email)) {
-          throw new Error('Format email tidak valid');
-        }
-
-        // Cek email sudah digunakan oleh user lain
-        const existingUser = await this.userRepository.findByEmail(filteredData.email);
-        if (existingUser && existingUser.id_user !== userId) {
-          throw new Error('Email sudah digunakan');
-        }
-      }
-
-      // Update profile
-      const updatedUser = await this.userRepository.update(userId, filteredData);
-      
-      // Hapus password dari response
-      const { password_hash, ...userWithoutPassword } = updatedUser;
-      
-      return {
-        user: userWithoutPassword,
-        message: 'Profil berhasil diperbarui'
-      };
-    } catch (error) {
-      console.error('Error in AuthService.updateProfile:', error);
-      throw new Error('Gagal mengupdate profil');
-    }
-  }
-}
-
-export default UserService;
+  return { message: "Password berhasil direset. Silakan login kembali." };
+};
