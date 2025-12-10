@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import LamaranHandler from '../handler/lamaran_handler.js';
-import { authMiddleware } from '../../middleware/authentication.js';
+import { verifyToken } from '../../middleware/authentication.js';
 import { uploadSingle } from '../../middleware/uploadMiddleware.js';
 import { authorizeRole } from '../../middleware/rbacMiddleware.js';
 
@@ -9,20 +9,20 @@ const lamaranHandler = new LamaranHandler();
 
 // Upload single file untuk lamaran baru
 router.post('/lamaran',
-  authMiddleware,
+  verifyToken,
   uploadSingle('file_berkas'), // Field name: 'file_berkas'
   lamaranHandler.createLamaran
 );
 
 router.get(
   '/lamaran/lamaran-saya',
-  authMiddleware,                    
+  verifyToken,                    
   authorizeRole(['mahasiswa']),     
   lamaranHandler.getLamaranSaya
 );
 
 router.get(
-    '/lamaran/lamaran-saya/:idLamaran', authMiddleware, authorizeRole(['mahasiswa']),
+    '/lamaran/lamaran-saya/:idLamaran', verifyToken, authorizeRole(['mahasiswa']),
     lamaranHandler.getDetailLamaran
 );
 
