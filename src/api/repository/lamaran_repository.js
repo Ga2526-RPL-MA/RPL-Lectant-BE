@@ -6,13 +6,56 @@ class LamaranRepository {
   
   async create(lamaranData) {
     try {
-      // ✅ Validasi lowongan exist dan aktif bisa dilakukan di sini atau di service
+      
+      const lowongan = await prisma.lowongan.findUnique({
+        where: { id_lowongan: lamaranData.id_lowongan },
+        include: {
+          kelas: {
+            include: {
+              mata_kuliah: true
+            }
+          }
+        }
+      });
+
+      if (!lowongan) {
+        throw new Error('Lowongan tidak ditemukan');
+      }
+
+      
+      if (lowongan.status !== 'aktif') {
+        throw new Error('Lowongan tidak aktif');
+      }
+
+      
+      const now = new Date();
+      if (lowongan.tanggal_akhir_pendaftaran && new Date(lowongan.tanggal_akhir_pendaftaran) < now) {
+        throw new Error('Pendaftaran sudah ditutup');
+      }
+
+      if (lowongan.tanggal_mulai_pendaftaran && new Date(lowongan.tanggal_mulai_pendaftaran) > now) {
+        throw new Error('Pendaftaran belum dibuka');
+      }
+
+      
+      const existingLamaran = await prisma.pendaftaran.findFirst({
+        where: {
+          id_lowongan: lamaranData.id_lowongan,
+          id_mahasiswa: lamaranData.id_mahasiswa
+        }
+      });
+
+      if (existingLamaran) {
+        throw new Error('Anda sudah mendaftar di lowongan ini');
+      }
+
+      
       const lamaran = await prisma.pendaftaran.create({
         data: {
           id_lowongan: lamaranData.id_lowongan,
           id_mahasiswa: lamaranData.id_mahasiswa,
           motivasi: lamaranData.motivasi,
-          file_berkas: lamaranData.file_berkas,
+          file_berkas: lamaranData.file_berkas, 
           status_pendaftaran: 'pending',
           tanggal_daftar: new Date()
         },
@@ -20,30 +63,52 @@ class LamaranRepository {
           mahasiswa: {
             select: {
               id_user: true,
+              nrp: true,
               nama: true,
               email: true,
-              nrp: true
+              no_telepon: true
             }
           },
           lowongan: {
-            select: {
-              id_lowongan: true,  
-              status: true
+            include: {
+              kelas: {
+                include: {
+                  mata_kuliah: true
+                }
+              },
+              dosen: {
+                select: {
+                  nama: true
+                }
+              }
             }
           }
         }
       });
-      
-      return lamaran; // ✅ Return langsung tanpa reassign
+
+      return lamaran;
     } catch (error) {
       console.error('Error in LamaranRepository.create:', error);
+
       
-      // Handle specific Prisma errors
+      if (error.message.includes('Lowongan tidak ditemukan') ||
+          error.message.includes('Lowongan tidak aktif') ||
+          error.message.includes('sudah mendaftar') ||
+          error.message.includes('Pendaftaran sudah ditutup') ||
+          error.message.includes('Pendaftaran belum dibuka')) {
+        throw error;
+      }
+
+      
       if (error.code === 'P2003') {
         throw new Error('Lowongan tidak ditemukan');
       }
-      
-      throw error;
+
+      if (error.code === 'P2002') {
+        throw new Error('Anda sudah mendaftar di lowongan ini');
+      }
+
+      throw new Error('Gagal membuat pendaftaran: ' + error.message);
     }
   }
 
@@ -124,7 +189,7 @@ class LamaranRepository {
   }
 
   async updateStatus(id_pendaftaran, status_pendaftaran) {
-    // Validasi status
+    
     const validStatus = ['pending', 'accepted', 'rejected'];
     if (!validStatus.includes(status_pendaftaran)) {
       throw new Error('Status tidak valid');
@@ -134,8 +199,8 @@ class LamaranRepository {
       where: { id_pendaftaran },
       data: { 
         status_pendaftaran,
-        // Anda bisa tambahkan timestamp untuk tracking
-        // updated_at: new Date() // jika ada field updated_at
+        
+        
       },
       include: {
         mahasiswa: {
@@ -261,7 +326,7 @@ class LamaranRepository {
       where: { id_mahasiswa }
     });
 
-    // Format hasil
+    
     const result = {
       total,
       pending: 0,

@@ -9,11 +9,12 @@ class LamaranHandler {
   createLamaran = async (req, res) => {
     try {
       const userId = req.user.id_user;
-      const { id_lowongan, motivasi } = req.body;
+      const { id_lowongan } = req.params; 
+      const { motivasi } = req.body;
       
-      // Validasi input
+      
       if (!id_lowongan) {
-        // Hapus file jika ada karena validasi gagal
+        
         if (req.file) {
           await deleteFile(req.file.path).catch(console.error);
         }
@@ -33,7 +34,7 @@ class LamaranHandler {
         });
       }
 
-      // Prepare file data
+      
       let file_berkas = null;
       if (req.file) {
         file_berkas = {
@@ -58,12 +59,12 @@ class LamaranHandler {
     } catch (error) {
       console.error('Error in LamaranHandler.createLamaran:', error);
       
-      // Cleanup file jika ada error
+      
       if (req.file) {
         await deleteFile(req.file.path).catch(console.error);
       }
 
-      // Error handling berdasarkan pesan error
+      
       if (error.message.includes('tidak ditemukan') || 
           error.message.includes('tidak aktif') ||
           error.message.includes('ditutup') ||

@@ -13,7 +13,6 @@ import cors from "cors";
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-const PORT = 4000;
 
 //CORS 
 app.use(
