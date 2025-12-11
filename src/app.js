@@ -38,7 +38,6 @@ app.use((req, res, next) => {
 
 app.use("/auth", authRouter);
 app.use('/dosen', dosenRouter);
-app.use('/lowongan', lowonganRouter);
 app.use('/dosen/lowongan', lowonganRouter);
 app.use('/mahasiswa', lamaranRouter);
 app.use('/mahasiswa', mahasiswa);

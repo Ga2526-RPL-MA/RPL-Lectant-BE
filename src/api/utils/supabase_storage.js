@@ -1,16 +1,14 @@
 import supabase from "../../config/supabase.js";
 import { v4 as uuidv4 } from "uuid";
 
-/**
- * req.file expected shape from multer memoryStorage:
- * {
- *   originalname, mimetype, buffer
- * }
- */
-export const uploadFileToSupabase = async (file, bucket = "mahasiswa-docs", folder = "") => {
-  const extension = file.originalname.split(".").pop();
+export const uploadFileToSupabase = async (
+  file,
+  bucket = "dokumen",     // FIX 1: bucket default benar
+  folder = ""
+) => {
+  const extension = file.originalname.split(".").pop().toLowerCase(); // FIX 2
   const filename = `${uuidv4()}.${extension}`;
-  const path = `${folder}${filename}`; // e.g. "mahasiswa/1234/uuid.pdf"
+  const path = `${folder}${filename}`;
 
   const { data, error } = await supabase.storage
     .from(bucket)
@@ -20,12 +18,14 @@ export const uploadFileToSupabase = async (file, bucket = "mahasiswa-docs", fold
     });
 
   if (error) {
-    console.error("Supabase upload error:", error);
-    throw { status: 500, message: "Gagal mengunggah berkas." };
+    console.error("Supabase upload error:", error); // debug detail
+    throw { status: 500, message: "Gagal mengunggah berkas." }; // FIX 3 optional
   }
 
-  // Get public URL (or use createSignedUrl if you prefer expiring link)
-  const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data: publicData } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(path);
+
   const publicURL = publicData?.publicUrl ?? null;
 
   return { path, publicURL };
