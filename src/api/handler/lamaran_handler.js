@@ -145,6 +145,78 @@ class LamaranHandler {
       });
     }
   };
+
+  // ============================
+  // UPDATE STATUS PENDAFTARAN
+  // ============================
+  updateStatusPendaftaran = async (req, res) => {
+    try {
+      const { idPendaftaran } = req.params;
+      const { status_pendaftaran } = req.body;
+      const userId = req.user.id_user;
+
+      console.log(status_pendaftaran);
+      
+      // Validasi input
+      if (!status_pendaftaran) {
+        return res.status(400).json({
+          success: false,
+          message: "Status pendaftaran wajib diisi",
+        });
+      }
+
+      const result = await this.lamaranService.updateStatusPendaftaran(
+        idPendaftaran,
+        status_pendaftaran,
+        userId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result.data,
+      });
+    } catch (error) {
+      console.error("Error in LamaranHandler.updateStatusPendaftaran:", error);
+
+      // Handle error untuk dosen yang tidak memiliki akses
+      if (error.message.includes("Hanya dosen")) {
+        return res.status(403).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      // Handle error untuk pendaftaran tidak ditemukan
+      if (error.message.includes("tidak ditemukan")) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      // Handle error untuk status tidak valid
+      if (error.message.includes("tidak valid")) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      // Handle error untuk akses tidak diizinkan
+      if (error.message.includes("tidak memiliki akses")) {
+        return res.status(403).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: "Gagal mengupdate status pendaftaran",
+      });
+    }
+  };
 }
 
 export default LamaranHandler;

@@ -121,21 +121,21 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {
           select: {
             id_lowongan: true,
-            judul: true,
-            perusahaan: true,
-            deskripsi: true,
+            tahun_ajaran: true,
+            jumlah_asisten: true,
+            persyaratan: true,
             status: true
           }
         }
       }
     });
-    
+
     return lamaran;
   }
 
@@ -146,8 +146,8 @@ class LamaranRepository {
         lowongan: {
           select: {
             id_lowongan: true,
-            judul: true,
-            perusahaan: true,
+            tahun_ajaran: true,
+            jumlah_asisten: true,
             status: true
           }
         }
@@ -156,7 +156,7 @@ class LamaranRepository {
         tanggal_daftar: 'desc'
       }
     });
-    
+
     return lamaranList;
   }
 
@@ -168,14 +168,14 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {
           select: {
             id_lowongan: true,
-            judul: true,
-            perusahaan: true,
+            tahun_ajaran: true,
+            jumlah_asisten: true,
             status: true
           }
         }
@@ -184,12 +184,12 @@ class LamaranRepository {
         tanggal_daftar: 'desc'
       }
     });
-    
+
     return lamaranList;
   }
 
   async updateStatus(id_pendaftaran, status_pendaftaran) {
-    
+
     const validStatus = ['pending', 'accepted', 'rejected'];
     if (!validStatus.includes(status_pendaftaran)) {
       throw new Error('Status tidak valid');
@@ -197,10 +197,10 @@ class LamaranRepository {
 
     const updatedLamaran = await prisma.pendaftaran.update({
       where: { id_pendaftaran },
-      data: { 
+      data: {
         status_pendaftaran,
-        
-        
+
+
       },
       include: {
         mahasiswa: {
@@ -208,19 +208,20 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {
           select: {
             id_lowongan: true,
-            judul: true,
-            perusahaan: true
+            tahun_ajaran: true,
+            jumlah_asisten: true,
+            persyaratan: true
           }
         }
       }
     });
-    
+
     return updatedLamaran;
   }
 
@@ -238,7 +239,7 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {
@@ -267,7 +268,7 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         }
       },
@@ -297,7 +298,7 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {
@@ -384,7 +385,7 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {
@@ -426,7 +427,7 @@ class LamaranRepository {
             id_user: true,
             nama: true,
             email: true,
-            nim: true
+            nrp: true
           }
         },
         lowongan: {

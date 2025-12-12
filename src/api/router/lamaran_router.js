@@ -25,4 +25,12 @@ router.get(
     lamaranHandler.getDetailLamaran
 );
 
+// Update status pendaftaran (hanya dosen)
+router.patch(
+  '/lamaran/status/:idPendaftaran',
+  verifyToken,
+  authorizeRole(['dosen']),
+  lamaranHandler.updateStatusPendaftaran
+);
+
 export default router;

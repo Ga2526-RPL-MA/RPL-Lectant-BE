@@ -288,6 +288,67 @@ class LamaranService {
     };
     return statusMap[status] || status;
   }
+
+  async updateStatusPendaftaran(idPendaftaran, statusPendaftaran, userId) {
+    try {
+      // Validasi user adalah dosen
+      const user = await prisma.users.findUnique({
+        where: { id_user: BigInt(userId) },
+        include: { dosen: true }
+      });
+
+      if (!user || user.role !== 'dosen') {
+        throw new Error('Hanya dosen yang dapat mengupdate status pendaftaran');
+      }
+
+      // Validasi status pendaftaran
+      const validStatus = ['pending', 'accepted', 'rejected'];
+      if (!validStatus.includes(statusPendaftaran)) {
+        throw new Error('Status pendaftaran tidak valid. Gunakan: pending, accepted, atau rejected');
+      }
+
+      // Cari pendaftaran
+      const pendaftaran = await prisma.pendaftaran.findUnique({
+        where: { id_pendaftaran: parseInt(idPendaftaran) },
+        include: {
+          lowongan: {
+            include: {
+              dosen: true
+            }
+          }
+        }
+      });
+
+      if (!pendaftaran) {
+        throw new Error('Pendaftaran tidak ditemukan');
+      }
+
+      // Validasi dosen hanya bisa update pendaftaran di lowongan miliknya
+      if (pendaftaran.lowongan.id_dosen !== BigInt(userId)) {
+        throw new Error('Anda tidak memiliki akses untuk mengupdate pendaftaran ini');
+      }
+
+      // Update status pendaftaran menggunakan repository
+      const updatedPendaftaran = await this.lamaranRepository.updateStatus(
+        parseInt(idPendaftaran),
+        statusPendaftaran
+      );
+
+      return {
+        success: true,
+        data: {
+          id_pendaftaran: updatedPendaftaran.id_pendaftaran,
+          status_pendaftaran: updatedPendaftaran.status_pendaftaran,
+          mahasiswa: updatedPendaftaran.mahasiswa,
+          lowongan: updatedPendaftaran.lowongan
+        },
+        message: `Status pendaftaran berhasil diubah menjadi ${this.getStatusDisplay(statusPendaftaran)}`
+      };
+    } catch (error) {
+      console.error('Error in LamaranService.updateStatusPendaftaran:', error);
+      throw error;
+    }
+  }
 }
 
 export default new LamaranService();
