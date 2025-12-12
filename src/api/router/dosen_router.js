@@ -8,15 +8,15 @@ const dosenHandler = new DosenHandler();
 
 
 // Semua route butuh auth + role dosen
-router.use(verifyToken, authorizeRole(["dosen"]));
+router.use(verifyToken, );
 
 // Routes
-router.post("/profile-aing", dosenHandler.createProfileHandler); // buat profil baru
-router.get("/profile-aing", dosenHandler.getProfileHandler);     // lihat profil
-router.patch("/profile-aing", dosenHandler.updateProfileHandler); // update profil
+router.post("/profile-aing",authorizeRole(["dosen"]), dosenHandler.createProfileHandler); // buat profil baru
+router.get("/profile-aing", authorizeRole(["dosen"]),dosenHandler.getProfileHandler);     // lihat profil
+router.patch("/profile-aing", authorizeRole(["dosen"]),dosenHandler.updateProfileHandler); // update profil
 
 // GET /dosen/kelas-aing
-router.get('/kelas-aing', dosenHandler.getKelasByDosenId);
-router.get('/statistik-aing', dosenHandler.getStatistikDosen);
+router.get('/kelas-aing',authorizeRole(["dosen"]), dosenHandler.getKelasByDosenId);
+router.get('/statistik-aing',authorizeRole(["dosen"]), dosenHandler.getStatistikDosen);
 
 export default router;

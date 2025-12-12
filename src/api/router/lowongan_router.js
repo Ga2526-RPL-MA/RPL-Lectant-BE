@@ -16,13 +16,31 @@ router.post(
   lowonganHandler.createLowongan
 );
 
-// GET ALL LOWONGAN (mahasiswa, dosen, admin)
+// GET ALL LOWONGAN - Daftar Kelas (semua lowongan terlepas dari status)
 router.get(
   '/all',
   verifyToken,
   checkProfileComplete(['mahasiswa', 'dosen']),
   authorizeRole(['mahasiswa', 'dosen', 'admin']),
   lowonganHandler.getAllLowongan
+);
+
+// GET LOWONGAN AKTIF - Kelas yang Dibuka (hanya lowongan dengan status 'aktif')
+router.get(
+  '/aktif',
+  verifyToken,
+  checkProfileComplete(['mahasiswa', 'dosen']),
+  authorizeRole(['mahasiswa', 'dosen', 'admin']),
+  lowonganHandler.getLowonganAktif
+);
+
+// GET LOWONGAN BY DOSEN - Kelas yang Anda Buka (lowongan milik dosen yang login)
+router.get(
+  '/my-lowongan',
+  verifyToken,
+  checkProfileComplete(['dosen']),
+  authorizeRole(['dosen']),
+  lowonganHandler.getLowonganByDosen
 );
 
 // GET LOWONGAN BY ID (mahasiswa, dosen, admin)

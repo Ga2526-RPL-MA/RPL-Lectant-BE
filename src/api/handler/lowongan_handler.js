@@ -25,13 +25,49 @@ class LowonganHandler {
     }
   };
 
-  // GET ALL LOWONGAN
-  
+  // GET ALL LOWONGAN (semua lowongan terlepas dari status)
   getAllLowongan = async (req, res) => {
     try {
       const result = await this.lowonganService.getAllLowongan();
       return res.status(200).json(result);
     } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  };
+
+  // GET LOWONGAN AKTIF (hanya lowongan dengan status 'aktif')
+  getLowonganAktif = async (req, res) => {
+    try {
+      const result = await this.lowonganService.getLowonganAktif();
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error in getLowonganAktif:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  };
+
+  // GET LOWONGAN BY DOSEN (lowongan milik dosen yang sedang login)
+  getLowonganByDosen = async (req, res) => {
+    try {
+      const dosenId = req.user?.id_user;
+
+      if (!dosenId) {
+        return res.status(401).json({
+          success: false,
+          message: "Token tidak memiliki dosenId"
+        });
+      }
+
+      const result = await this.lowonganService.getLowonganByDosen(dosenId);
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error in getLowonganByDosen:", error);
       return res.status(500).json({
         success: false,
         message: "Internal server error"

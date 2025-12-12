@@ -179,7 +179,7 @@ class LowonganRepository {
     }
   }
 
-  // READ ALL LOWONGAN
+  // READ ALL LOWONGAN (semua lowongan terlepas dari status)
   async getAllLowongan() {
     try {
       const data = await prisma.lowongan.findMany({
@@ -191,6 +191,7 @@ class LowonganRepository {
       });
 
       return data.map(l => ({
+        id_lowongan: l.id_lowongan,
         matkul: l.kelas?.mata_kuliah?.nama_mk,
         dosen: l.dosen?.nama,
         jadwal: this.formatJadwal(l.kelas.hari, l.kelas.jam_mulai, l.kelas.jam_selesai),
@@ -199,10 +200,73 @@ class LowonganRepository {
         deadline_pendaftaran: new Date(l.tanggal_akhir_pendaftaran).toLocaleDateString('id-ID', {
           day: '2-digit', month: 'long', year: 'numeric'
         }),
-        persyaratan: l.persyaratan || ''
+        persyaratan: l.persyaratan || '',
+        status: l.status
       }));
     } catch (error) {
       console.error("Error in getAllLowongan:", error);
+      throw error;
+    }
+  }
+
+  // GET LOWONGAN AKTIF (hanya lowongan dengan status 'aktif')
+  async getLowonganAktif() {
+    try {
+      const data = await prisma.lowongan.findMany({
+        where: { status: 'aktif' },
+        include: {
+          dosen: true,
+          kelas: { include: { mata_kuliah: true } }
+        },
+        orderBy: { id_lowongan: 'desc' }
+      });
+
+      return data.map(l => ({
+        id_lowongan: l.id_lowongan,
+        matkul: l.kelas?.mata_kuliah?.nama_mk,
+        dosen: l.dosen?.nama,
+        jadwal: this.formatJadwal(l.kelas.hari, l.kelas.jam_mulai, l.kelas.jam_selesai),
+        jumlah_asisten: l.jumlah_asisten,
+        lokasi: l.dosen?.jurusan,
+        deadline_pendaftaran: new Date(l.tanggal_akhir_pendaftaran).toLocaleDateString('id-ID', {
+          day: '2-digit', month: 'long', year: 'numeric'
+        }),
+        persyaratan: l.persyaratan || '',
+        status: l.status
+      }));
+    } catch (error) {
+      console.error("Error in getLowonganAktif:", error);
+      throw error;
+    }
+  }
+
+  // GET LOWONGAN BY DOSEN (lowongan milik dosen tertentu)
+  async getLowonganByDosen(dosenId) {
+    try {
+      const data = await prisma.lowongan.findMany({
+        where: { id_dosen: BigInt(dosenId) },
+        include: {
+          dosen: true,
+          kelas: { include: { mata_kuliah: true } }
+        },
+        orderBy: { id_lowongan: 'desc' }
+      });
+
+      return data.map(l => ({
+        id_lowongan: l.id_lowongan,
+        matkul: l.kelas?.mata_kuliah?.nama_mk,
+        dosen: l.dosen?.nama,
+        jadwal: this.formatJadwal(l.kelas.hari, l.kelas.jam_mulai, l.kelas.jam_selesai),
+        jumlah_asisten: l.jumlah_asisten,
+        lokasi: l.dosen?.jurusan,
+        deadline_pendaftaran: new Date(l.tanggal_akhir_pendaftaran).toLocaleDateString('id-ID', {
+          day: '2-digit', month: 'long', year: 'numeric'
+        }),
+        persyaratan: l.persyaratan || '',
+        status: l.status
+      }));
+    } catch (error) {
+      console.error("Error in getLowonganByDosen:", error);
       throw error;
     }
   }

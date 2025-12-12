@@ -16,12 +16,32 @@ class LowonganService {
     }
   }
 
-  // READ ALL
+  // READ ALL (semua lowongan terlepas dari status)
   async getAllLowongan() {
     try {
       return await this.lowonganRepository.getAllLowongan();
     } catch (error) {
       console.error("Service getAllLowongan:", error);
+      throw error;
+    }
+  }
+
+  // GET LOWONGAN AKTIF (hanya lowongan dengan status 'aktif')
+  async getLowonganAktif() {
+    try {
+      return await this.lowonganRepository.getLowonganAktif();
+    } catch (error) {
+      console.error("Service getLowonganAktif:", error);
+      throw error;
+    }
+  }
+
+  // GET LOWONGAN BY DOSEN (lowongan milik dosen tertentu)
+  async getLowonganByDosen(dosenId) {
+    try {
+      return await this.lowonganRepository.getLowonganByDosen(dosenId);
+    } catch (error) {
+      console.error("Service getLowonganByDosen:", error);
       throw error;
     }
   }
