@@ -26,10 +26,9 @@ class LowonganRepository {
       });
 
       return pendaftar.map(p => ({
-        id: p.mahasiswa.id_user,
+        id: p.id_pendaftaran,
         nama: p.mahasiswa.nama,
         nrp: p.mahasiswa.nrp,
-    
         semester: p.mahasiswa.semester,
         no_telp: p.mahasiswa.no_telepon,
         tanggal_daftar: new Date(p.tanggal_daftar).toLocaleDateString('id-ID', {
