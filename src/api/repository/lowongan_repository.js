@@ -29,7 +29,7 @@ class LowonganRepository {
         id: p.mahasiswa.id_user,
         nama: p.mahasiswa.nama,
         nrp: p.mahasiswa.nrp,
-        ipk: p.ipk || 2.3,
+    
         semester: p.mahasiswa.semester,
         no_telp: p.mahasiswa.no_telepon,
         tanggal_daftar: new Date(p.tanggal_daftar).toLocaleDateString('id-ID', {
