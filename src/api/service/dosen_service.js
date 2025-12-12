@@ -54,7 +54,7 @@ class DosenService {
       return {
         total_matkul: statistik.total_matkul.toString(),
         jumlah_lowongan: statistik.jumlah_lowongan.toString(),
-        jumlah_asisten: statistik.jumlah_asisten
+        jumlah_asisten: statistik.jumlah_asisten.toString()
       };
     } catch (error) {
       console.error('Error in DosenService.getStatistikDosen:', error);
