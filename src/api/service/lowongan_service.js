@@ -101,6 +101,58 @@ async updateStatusLowongan(idLowongan, status, dosenId) {
       throw error;
     }
   }
+
+  // GET DETAIL PENDAFTAR
+  async getDetailPendaftar(lowonganId, pendaftarId, dosenId) {
+    try {
+      const lowongan = await this.lowonganRepository.findLowonganById(lowonganId);
+      if (!lowongan) throw new Error("Lowongan tidak ditemukan");
+
+      // hanya dosen pemilik lowongan
+      if (Number(lowongan.id_dosen) !== Number(dosenId))
+        throw new Error("Unauthorized");
+
+      const result = await this.lowonganRepository.getDetailPendaftar(lowonganId, pendaftarId);
+
+      if (!result) {
+        throw new Error("Pendaftar tidak ditemukan");
+      }
+
+      const { pendaftaran, pengalaman } = result;
+
+      // Format pengalaman
+      const formattedPengalaman = pengalaman.map(p => ({
+        id_lowongan: p.id_lowongan,
+        nama_matkul: p.lowongan?.kelas?.mata_kuliah?.nama_mk || 'N/A',
+        dosen: p.lowongan?.dosen?.nama || 'N/A',
+        tahun_ajaran: p.lowongan?.tahun_ajaran || 'N/A',
+        status: p.status === 'aktif' ? 'aktif' : 'tidak'
+      }));
+
+      // Format response
+      return {
+        id: pendaftaran.id_pendaftaran,
+        nama: pendaftaran.mahasiswa.nama,
+        nrp: pendaftaran.mahasiswa.nrp,
+        jurusan: pendaftaran.mahasiswa.jurusan,
+        semester: pendaftaran.mahasiswa.semester,
+        tanggal_daftar: new Date(pendaftaran.tanggal_daftar).toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }),
+        email: pendaftaran.mahasiswa.email,
+        no_telp: pendaftaran.mahasiswa.no_telepon,
+        motivasi: pendaftaran.motivasi,
+        pengalaman: formattedPengalaman,
+        dokumen: pendaftaran.mahasiswa.dokumen_url,
+        status: pendaftaran.status_pendaftaran
+      };
+    } catch (error) {
+      console.error("Service getDetailPendaftar:", error);
+      throw error;
+    }
+  }
 }
 
 export default LowonganService;

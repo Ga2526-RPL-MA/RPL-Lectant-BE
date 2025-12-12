@@ -70,4 +70,13 @@ router.get(
   lowonganHandler.getPendaftarByLowonganId
 );
 
+// GET DETAIL PENDAFTAR BY ID (dosen, admin)
+router.get(
+  '/:lowonganId/pendaftar/:pendaftarId',
+  verifyToken,
+  checkProfileComplete(['dosen', 'admin']),
+  authorizeRole(['dosen', 'admin']),
+  lowonganHandler.getDetailPendaftar
+);
+
 export default router;

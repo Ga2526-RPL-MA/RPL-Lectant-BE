@@ -42,6 +42,71 @@ class LowonganRepository {
     }
   }
 
+  // GET DETAIL PENDAFTAR BY ID
+  async getDetailPendaftar(lowonganId, pendaftarId) {
+    try {
+      // Get pendaftaran detail
+      const pendaftaran = await prisma.pendaftaran.findFirst({
+        where: {
+          id_pendaftaran: parseInt(pendaftarId),
+          id_lowongan: parseInt(lowonganId)
+        },
+        include: {
+          mahasiswa: {
+            select: {
+              id_user: true,
+              nama: true,
+              nrp: true,
+              jurusan: true,
+              semester: true,
+              no_telepon: true,
+              email: true,
+              dokumen_url: true
+            }
+          }
+        }
+      });
+
+      if (!pendaftaran) {
+        return null;
+      }
+
+      // Get pengalaman (asistensi yang sudah/sedang berjalan)
+      const pengalaman = await prisma.asistensi.findMany({
+        where: {
+          id_mahasiswa: pendaftaran.id_mahasiswa
+        },
+        include: {
+          lowongan: {
+            include: {
+              kelas: {
+                include: {
+                  mata_kuliah: true
+                }
+              },
+              dosen: {
+                select: {
+                  nama: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          tanggal_mulai: 'desc'
+        }
+      });
+
+      return {
+        pendaftaran,
+        pengalaman
+      };
+    } catch (error) {
+      console.error('Error in LowonganRepository.getDetailPendaftar:', error);
+      throw error;
+    }
+  }
+
   // UPDATE STATUS LOWONGAN
   async updateStatusLowongan(idLowongan, status) {
     try {

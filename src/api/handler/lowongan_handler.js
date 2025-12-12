@@ -167,7 +167,7 @@ class LowonganHandler {
   };
 
   // GET PENDAFTAR BY LOWONGAN
- 
+
   getPendaftarByLowonganId = async (req, res) => {
     try {
       const { lowonganId } = req.params;
@@ -196,6 +196,60 @@ class LowonganHandler {
       }
 
       return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  };
+
+  // GET DETAIL PENDAFTAR
+  getDetailPendaftar = async (req, res) => {
+    try {
+      const { lowonganId, pendaftarId } = req.params;
+      const dosenId = req.user?.id_user;
+
+      if (!dosenId) {
+        return res.status(401).json({
+          success: false,
+          message: "Token tidak memiliki dosenId"
+        });
+      }
+
+      const result = await this.lowonganService.getDetailPendaftar(
+        lowonganId,
+        pendaftarId,
+        dosenId
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error("Error in LowonganHandler.getDetailPendaftar:", error);
+
+      if (error.message === "Lowongan tidak ditemukan") {
+        return res.status(404).json({
+          success: false,
+          message: "Lowongan tidak ditemukan"
+        });
+      }
+
+      if (error.message === "Pendaftar tidak ditemukan") {
+        return res.status(404).json({
+          success: false,
+          message: "Pendaftar tidak ditemukan"
+        });
+      }
+
+      if (error.message === "Unauthorized") {
+        return res.status(403).json({
+          success: false,
+          message: "Anda tidak memiliki akses untuk melihat detail pendaftar"
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
     }
   };
 }
