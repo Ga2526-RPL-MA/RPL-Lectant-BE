@@ -21,7 +21,7 @@ app.use(
       "http://localhost:3000",                   // local Next.js
       "https://rpl-lectant-fe.vercel.app"         // deployed FE domain
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE, PATCH"],
     credentials: true,
   })
 );
