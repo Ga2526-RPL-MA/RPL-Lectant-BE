@@ -8,12 +8,13 @@ import lowonganRouter from './api/router/lowongan_router.js';
 import lamaranRouter from './api/router/lamaran_router.js';
 import mahasiswa from './api/router/mahasiswa_router.js';
 import dosenRouter from './api/router/dosen_router.js';
+import kelasRouter from './api/router/kelas_router.js';
 import cors from "cors";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-~app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 
 //CORS 
 app.use(
@@ -42,6 +43,7 @@ app.use('/dosen', dosenRouter);
 app.use('/dosen/lowongan', lowonganRouter);
 app.use('/mahasiswa', lamaranRouter);
 app.use('/mahasiswa', mahasiswa);
+app.use('/kelas', kelasRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome to RPL-Lectant Backend Express App!");

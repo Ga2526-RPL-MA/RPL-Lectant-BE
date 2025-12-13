@@ -10,7 +10,7 @@ class LowonganHandler {
 
   createLowongan = async (req, res) => {
     try {
-      const result = await this.lowonganService.createLowongan(req.body);
+      const result = await this.lowonganService.createLowongan(req);
 
       return res.status(201).json({
         success: true,

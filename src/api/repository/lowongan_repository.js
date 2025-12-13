@@ -144,12 +144,16 @@ class LowonganRepository {
   // CREATE LOWONGAN
   async createLowongan(payload) {
     try {
-      const { id_dosen, matkul, kelas, tahun_ajaran, jumlah_asisten, honor, mulai_lowongan, akhir_lowongan, mulai_kontrak, akhir_kontrak, persyaratan } = payload;
+      const { matkul, kelas, tahun_ajaran, jumlah_asisten, honor, mulai_lowongan, akhir_lowongan, mulai_kontrak, akhir_kontrak, persyaratan } = payload.body;
 
-      const dosenData = await prisma.dosen.findFirst({ where: { id_user: BigInt(id_dosen) } });
+      if (!payload.user || !payload.user.id_user) {
+        throw new Error("Token tidak memiliki userId");
+      }
+
+      const dosenData = await prisma.dosen.findFirst({ where: { id_user: BigInt(payload.user.id_user) } });
       if (!dosenData) throw new Error("Dosen tidak ditemukan");
 
-      const mkData = await prisma.mata_kuliah.findFirst({ where: { nama_mk: matkul } });
+      const mkData = await prisma.mata_kuliah.findFirst({ where: { nama_mk: matkul} });
       if (!mkData) throw new Error("Mata kuliah tidak ditemukan");
 
       const kelasData = await prisma.kelas.findFirst({ where: { nama_kelas: kelas, id_mk: mkData.id_mk } });
